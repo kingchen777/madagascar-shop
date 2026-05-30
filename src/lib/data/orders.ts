@@ -1,45 +1,50 @@
-/**
- * Order data layer — swap mock → Prisma here when DB is ready.
- *
- * To connect real database:
- *   1. Fill .env: DATABASE_URL, DIRECT_URL
- *   2. Run: npx prisma db push && npm run db:seed
- *   3. Replace each function body with the commented Prisma version below.
- */
+import { prisma } from "@/lib/db";
+import type { Order, OrderItem, Payment, User, Product, ProductTranslation } from "@prisma/client";
 
-import {
-  MOCK_ORDERS,
-  getMockOrder,
-  getMockOrders,
-  type MockOrder,
-} from "@/lib/mock-orders";
+export type OrderWithRelations = Order & {
+  user: User;
+  items: (OrderItem & {
+    product: (Product & { translations: ProductTranslation[] }) | null;
+  })[];
+  payments: Payment[];
+};
 
-export type { MockOrder as Order };
+export type { Order };
 
-/** Get orders for a user (all orders in mock mode). */
-export async function getOrders(userId?: string): Promise<MockOrder[]> {
-  // TODO (DB): return db.order.findMany({
-  //   where: userId ? { userId } : {},
-  //   include: { items: { include: { product: { include: { translations: true } } } } },
-  //   orderBy: { createdAt: "desc" },
-  // });
-  return getMockOrders(userId);
+/** Get orders for a user, or all orders if no userId provided. */
+export async function getOrders(userId?: string): Promise<OrderWithRelations[]> {
+  return prisma.order.findMany({
+    where: userId ? { userId } : {},
+    include: {
+      user: true,
+      items: { include: { product: { include: { translations: true } } } },
+      payments: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 /** Get a single order by id. */
-export async function getOrder(id: string): Promise<MockOrder | undefined> {
-  // TODO (DB): return db.order.findUnique({
-  //   where: { id },
-  //   include: { items: { include: { product: { include: { translations: true } } } }, payments: true },
-  // }) ?? undefined;
-  return getMockOrder(id);
+export async function getOrder(id: string): Promise<OrderWithRelations | undefined> {
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      user: true,
+      items: { include: { product: { include: { translations: true } } } },
+      payments: true,
+    },
+  });
+  return order ?? undefined;
 }
 
 /** Get all orders for admin dashboard. */
-export async function getAllOrders(): Promise<MockOrder[]> {
-  // TODO (DB): return db.order.findMany({
-  //   include: { user: true, items: true, payments: true },
-  //   orderBy: { createdAt: "desc" },
-  // });
-  return MOCK_ORDERS;
+export async function getAllOrders(): Promise<OrderWithRelations[]> {
+  return prisma.order.findMany({
+    include: {
+      user: true,
+      items: { include: { product: { include: { translations: true } } } },
+      payments: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }

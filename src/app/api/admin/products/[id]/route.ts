@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
+import { prisma } from "@/lib/db";
+import type { ProductType, SourcePlatform, ProductStatus } from "@prisma/client";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const product = MOCK_PRODUCTS.find((p) => p.id === id || p.slug === id);
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: { translations: true, images: true, category: true },
+  });
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(product);
 }
@@ -16,38 +20,46 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await req.json() as Record<string, unknown>;
+  const body = await req.json() as {
+    slug?: string;
+    type?: string;
+    source?: string;
+    sourceUrl?: string;
+    priceMGA?: string;
+    priceCNY?: string;
+    weightKg?: string;
+    stock?: string;
+    status?: string;
+    translations?: Record<string, { name: string; description: string }>;
+  };
 
-  // TODO (DB):
-  // const product = await prisma.product.update({
-  //   where: { id },
-  //   data: {
-  //     ...(body.slug && { slug: body.slug as string }),
-  //     ...(body.priceMGA && { priceMGA: new Decimal(body.priceMGA as string) }),
-  //     ...(body.priceCNY && { basePriceCNY: new Decimal(body.priceCNY as string) }),
-  //     ...(body.weightKg && { weightKg: new Decimal(body.weightKg as string) }),
-  //     ...(body.stock !== undefined && { stock: parseInt(body.stock as string) }),
-  //     ...(body.status && { status: body.status as ProductStatus }),
-  //     ...(body.type && { type: body.type as ProductType }),
-  //     ...(body.source && { source: body.source as SourcePlatform }),
-  //     ...(body.sourceUrl !== undefined && { sourceUrl: body.sourceUrl as string | null }),
-  //   },
-  //   include: { translations: true, category: true },
-  // });
-  // const tr = body.translations as Record<string, { name: string; description: string }> | undefined;
-  // if (tr) {
-  //   for (const [locale, t] of Object.entries(tr)) {
-  //     await prisma.productTranslation.upsert({
-  //       where: { productId_locale: { productId: id, locale } },
-  //       create: { productId: id, locale, name: t.name, description: t.description, isAuto: locale !== "fr" },
-  //       update: { name: t.name, description: t.description },
-  //     });
-  //   }
-  // }
-  // return NextResponse.json(product);
+  const product = await prisma.product.update({
+    where: { id },
+    data: {
+      ...(body.slug && { slug: body.slug }),
+      ...(body.type && { type: body.type as ProductType }),
+      ...(body.source && { source: body.source as SourcePlatform }),
+      ...(body.sourceUrl !== undefined && { sourceUrl: body.sourceUrl || null }),
+      ...(body.priceMGA && { priceMGA: body.priceMGA }),
+      ...(body.priceCNY && { basePriceCNY: body.priceCNY }),
+      ...(body.weightKg && { weightKg: body.weightKg }),
+      ...(body.stock !== undefined && { stock: parseInt(body.stock) }),
+      ...(body.status && { status: body.status as ProductStatus }),
+    },
+    include: { translations: true, images: true, category: true },
+  });
 
-  console.log("[Product PATCH]", id, body);
-  return NextResponse.json({ id, ...body, updatedAt: new Date().toISOString() });
+  if (body.translations) {
+    for (const [locale, t] of Object.entries(body.translations)) {
+      await prisma.productTranslation.upsert({
+        where: { productId_locale: { productId: id, locale } },
+        create: { productId: id, locale, name: t.name, description: t.description, isAuto: locale !== "fr" },
+        update: { name: t.name, description: t.description },
+      });
+    }
+  }
+
+  return NextResponse.json(product);
 }
 
 export async function DELETE(
@@ -55,8 +67,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-
-  // TODO (DB): await prisma.product.delete({ where: { id } });
-  console.log("[Product DELETE]", id);
+  await prisma.product.delete({ where: { id } });
   return NextResponse.json({ deleted: true, id });
 }
