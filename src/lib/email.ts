@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function formatMGA(n: number) {
   return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(n) + " Ar";
 }
@@ -18,6 +16,7 @@ interface OrderEmailData {
 
 export async function sendOrderConfirmation(data: OrderEmailData): Promise<void> {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) return;
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const itemRows = data.items
     .map(
