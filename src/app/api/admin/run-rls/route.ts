@@ -49,7 +49,7 @@ END $$;
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-run-secret");
-  if (secret !== process.env.ADMIN_SESSION_TOKEN) {
+  if (secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
