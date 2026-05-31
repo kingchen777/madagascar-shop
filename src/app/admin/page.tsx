@@ -34,7 +34,7 @@ export default async function AdminDashboard() {
 
   const { data: productsData } = await supabase
     .from("Product")
-    .select("id, slug, type, priceMGA, stock, translations")
+    .select("id, slug, type, priceMGA, stock, translations:ProductTranslation(locale, name)")
     .order("createdAt", { ascending: false })
     .limit(5);
   const products = productsData ?? [];
@@ -140,8 +140,8 @@ export default async function AdminDashboard() {
           </div>
           <ul className="divide-y divide-gray-100">
             {products.map((p) => {
-              const trans = p.translations as Record<string, { name?: string }> | null;
-              const nameFr = trans?.fr?.name ?? p.slug;
+              const trans = (p.translations as { locale: string; name: string }[] | null) ?? [];
+              const nameFr = trans.find((t) => t.locale === "fr")?.name ?? p.slug;
               return (
                 <li key={p.id} className="flex items-center gap-3 px-5 py-3">
                   <div className="flex-1 min-w-0">
