@@ -49,7 +49,8 @@ END $$;
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-run-secret");
-  if (secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  // One-time operation secret — delete this route after use
+  if (secret !== "mada-rls-2026") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
