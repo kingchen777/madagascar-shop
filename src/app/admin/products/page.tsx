@@ -35,7 +35,11 @@ const SOURCE_FR: Record<string, string> = {
 export default async function AdminProductsPage() {
   const { data: productsData } = await supabase
     .from("Product")
-    .select("id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, translations, category:Category(name)")
+    .select(`
+      id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl,
+      translations:ProductTranslation(locale, name),
+      category:Category(slug, categoryTranslations:CategoryTranslation(locale, name))
+    `)
     .order("createdAt", { ascending: false });
   const products = productsData ?? [];
 
@@ -77,10 +81,10 @@ export default async function AdminProductsPage() {
                 </td>
               </tr>
             ) : products.map((p) => {
-              const trans = p.translations as Record<string, { name?: string }> | null;
-              const nameFr = trans?.["fr"]?.name ?? p.slug;
-              const cat = p.category as { name?: Record<string, string> } | null;
-              const catName = cat?.name?.["fr"] ?? "—";
+              const trans = (p.translations as { locale: string; name: string }[] | null) ?? [];
+              const nameFr = trans.find((t) => t.locale === "fr")?.name ?? p.slug;
+              const cat = p.category as unknown as { slug: string; categoryTranslations: { locale: string; name: string }[] } | null;
+              const catName = cat?.categoryTranslations.find((t) => t.locale === "fr")?.name ?? "—";
 
               return (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">

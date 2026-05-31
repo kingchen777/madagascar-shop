@@ -25,7 +25,12 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
 
   const { data: productsData } = await supabase
     .from("Product")
-    .select("id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg, images, translations, category:Category(slug, name)")
+    .select(`
+      id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg,
+      translations:ProductTranslation(locale, name, description, isAuto),
+      images:ProductImage(url, sort),
+      category:Category(slug, categoryTranslations:CategoryTranslation(locale, name))
+    `)
     .eq("status", "ACTIVE")
     .order("createdAt", { ascending: false });
 
@@ -36,9 +41,9 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
 
   const { data: categoriesData } = await supabase
     .from("Category")
-    .select("slug, name")
+    .select("slug, translations:CategoryTranslation(locale, name)")
     .order("slug");
-  const categories = (categoriesData ?? []) as { slug: string; name: Record<string, string> }[];
+  const categories = (categoriesData ?? []) as { slug: string; translations: { locale: string; name: string }[] }[];
 
   const allLabel: Record<Locale, string> = { fr: "Tous", en: "All", zh: "全部" };
   const pageTitle: Record<Locale, string> = {
@@ -72,7 +77,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
                 : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
             }`}
           >
-            {cat.name[loc] ?? cat.name["fr"] ?? cat.slug}
+            {cat.translations.find((t) => t.locale === loc)?.name ?? cat.translations.find((t) => t.locale === "fr")?.name ?? cat.slug}
           </a>
         ))}
       </div>

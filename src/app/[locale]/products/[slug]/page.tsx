@@ -25,12 +25,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale, slug } = await params;
   const { data: product } = await supabase
     .from("Product")
-    .select("translations")
+    .select("translations:ProductTranslation(locale, name)")
     .eq("slug", slug)
     .single();
   if (!product) return { title: "Not found" };
-  const trans = product.translations as Record<string, { name: string }> | null;
-  const name = trans?.[locale]?.name ?? trans?.["fr"]?.name ?? slug;
+  const trans = (product.translations as { locale: string; name: string }[] | null) ?? [];
+  const name = trans.find((t) => t.locale === locale)?.name ?? trans.find((t) => t.locale === "fr")?.name ?? slug;
   return { title: name };
 }
 
@@ -50,16 +50,26 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { data: product } = await supabase
     .from("Product")
-    .select("id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg, images, translations, category:Category(slug, name)")
+    .select(`
+      id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg,
+      translations:ProductTranslation(locale, name, description, isAuto),
+      images:ProductImage(url, sort),
+      category:Category(slug, categoryTranslations:CategoryTranslation(locale, name))
+    `)
     .eq("slug", slug)
     .single();
 
   if (!product) notFound();
 
-  const trans = product.translations as Record<string, { name: string; description: string; isAuto?: boolean }> | null ?? {};
-  const translation = trans[loc] ?? trans["fr"] ?? { name: product.slug, description: "", isAuto: false };
-  const images = (product.images as string[] | null) ?? [];
-  const category = product.category as unknown as { slug: string; name: Record<string, string> } | null;
+  type Translation = { locale: string; name: string; description: string; isAuto?: boolean };
+  type CategoryT = { slug: string; categoryTranslations: { locale: string; name: string }[] };
+  type ImageT = { url: string; sort: number };
+
+  const translations = (product.translations as Translation[] | null) ?? [];
+  const translation = translations.find((t) => t.locale === loc) ?? translations.find((t) => t.locale === "fr") ?? { name: product.slug, description: "", isAuto: false };
+  const images = [...((product.images as ImageT[] | null) ?? [])].sort((a, b) => a.sort - b.sort).map((i) => i.url);
+  const category = product.category as unknown as CategoryT | null;
+  const categoryName = category?.categoryTranslations.find((t) => t.locale === loc)?.name ?? category?.categoryTranslations.find((t) => t.locale === "fr")?.name ?? "";
   const descriptionLines = (translation.description ?? "").split("\n");
 
   return (
@@ -101,7 +111,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <div className="flex flex-col gap-5">
           {/* Category */}
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-            {category?.name?.[loc] ?? category?.name?.["fr"] ?? ""}
+            {categoryName}
           </p>
 
           {/* Title */}
@@ -173,6 +183,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {product.type === "SELF" ? (
               <>
                 <AddToCartButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: images[0] ?? null }} />
+
                 <Link
                   href={`/${locale}/checkout?product=${product.slug}`}
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-500 px-6 text-white font-semibold hover:bg-amber-600 transition-colors gap-2"
