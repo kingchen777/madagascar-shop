@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Package, ChevronRight, Clock, Search } from "lucide-react";
@@ -67,6 +67,14 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
+
+  // Pre-fill phone from last checkout
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("madashop_last_phone");
+      if (saved) setPhone(saved);
+    } catch { /* ignore */ }
+  }, []);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();

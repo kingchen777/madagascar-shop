@@ -117,6 +117,8 @@ export default function CheckoutPage() {
     } catch {
       // Continue to success screen even if API fails (offline mode)
     }
+    // Store phone so orders page can pre-fill the lookup
+    try { localStorage.setItem("madashop_last_phone", form.phone); } catch { /* ignore */ }
     clear();
     setSubmitting(false);
     setDone(true);
