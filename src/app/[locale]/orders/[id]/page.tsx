@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeft, CheckCircle, Circle, Clock } from "lucide-react";
@@ -75,10 +74,10 @@ export default async function OrderDetailPage({ params }: Props) {
   const { data: order } = await supabase
     .from("Order")
     .select(`
-      id, orderNo, status, type, note,
-      totalAmount, depositAmount, serviceAmount, shippingAmount, customsAmount,
+      id, orderNo, status, type, internalNotes,
+      totalAmount, depositAmount, serviceFee, intlShipping, customsFee,
       createdAt,
-      items:OrderItem(id, titleSnapshot, imageSnapshot, unitPrice, qty)
+      items:OrderItem(id, titleSnapshot, unitPriceMGA, qty)
     `)
     .eq("id", id)
     .single();
@@ -92,16 +91,15 @@ export default async function OrderDetailPage({ params }: Props) {
   const items = order.items as {
     id: string;
     titleSnapshot: string;
-    imageSnapshot: string | null;
-    unitPrice: string;
+    unitPriceMGA: string;
     qty: number;
   }[] | null ?? [];
 
   const totalAmount = Number(order.totalAmount ?? 0);
   const depositAmount = Number(order.depositAmount ?? 0);
-  const serviceAmount = Number(order.serviceAmount ?? 0);
-  const shippingAmount = Number(order.shippingAmount ?? 0);
-  const customsAmount = Number(order.customsAmount ?? 0);
+  const serviceAmount = Number(order.serviceFee ?? 0);
+  const shippingAmount = Number(order.intlShipping ?? 0);
+  const customsAmount = Number(order.customsFee ?? 0);
   const productCost = totalAmount - serviceAmount - shippingAmount - customsAmount;
   const balanceDue = Math.max(totalAmount - depositAmount, 0);
 
@@ -175,9 +173,9 @@ export default async function OrderDetailPage({ params }: Props) {
                   );
                 })}
               </ol>
-              {order.note && (
+              {order.internalNotes && (
                 <p className="mt-4 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
-                  {order.note}
+                  {order.internalNotes}
                 </p>
               )}
             </section>
@@ -197,26 +195,15 @@ export default async function OrderDetailPage({ params }: Props) {
             <div className="space-y-3">
               {items.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  {item.imageSnapshot && (
-                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                      <Image
-                        src={item.imageSnapshot}
-                        alt={item.titleSnapshot}
-                        fill
-                        className="object-cover"
-                        sizes="64px"
-                      />
-                    </div>
-                  )}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
                       {item.titleSnapshot}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatMGA(item.unitPrice)} × {item.qty}
+                      {formatMGA(item.unitPriceMGA)} × {item.qty}
                     </p>
                     <p className="text-sm font-semibold text-amber-700">
-                      {formatMGA(Number(item.unitPrice) * item.qty)}
+                      {formatMGA(Number(item.unitPriceMGA) * item.qty)}
                     </p>
                   </div>
                 </div>

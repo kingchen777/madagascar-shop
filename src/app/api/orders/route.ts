@@ -3,6 +3,28 @@ import { supabase } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email";
 import { randomUUID } from "crypto";
 
+export async function GET(req: NextRequest) {
+  const phone = req.nextUrl.searchParams.get("phone");
+  if (!phone) return NextResponse.json([], { status: 200 });
+
+  // Look up user by phone, then fetch their orders
+  const { data: user } = await supabase
+    .from("User")
+    .select("id")
+    .eq("phone", phone)
+    .single();
+
+  if (!user) return NextResponse.json([]);
+
+  const { data: orders } = await supabase
+    .from("Order")
+    .select("id, orderNo, status, totalAmount, createdAt, items:OrderItem(titleSnapshot)")
+    .eq("userId", user.id)
+    .order("createdAt", { ascending: false });
+
+  return NextResponse.json(orders ?? []);
+}
+
 interface OrderItem {
   id: string;
   slug: string;
