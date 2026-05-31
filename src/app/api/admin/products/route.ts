@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import type { ProductType, SourcePlatform } from "@prisma/client";
+import { supabase } from "@/lib/db";
+import { randomUUID } from "crypto";
+
+const PRODUCT_SELECT = `*, translations:ProductTranslation(*), images:ProductImage(*), category:Category(*)`;
 
 export async function GET() {
-  const products = await prisma.product.findMany({
-    include: { translations: true, images: true, category: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(products);
+  const { data, error } = await supabase
+    .from("Product")
+    .select(PRODUCT_SELECT)
+    .order("createdAt", { ascending: false });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
 }
 
 export async function POST(req: NextRequest) {
@@ -33,31 +36,51 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const product = await prisma.product.create({
-    data: {
-      slug,
-      type: (body.type as ProductType) ?? "SELF",
-      source: (body.source as SourcePlatform) ?? "NONE",
-      sourceUrl: body.sourceUrl || null,
-      priceMGA: priceMGA,
-      basePriceCNY: body.priceCNY ?? null,
-      weightKg: body.weightKg ?? null,
-      stock: body.stock ? parseInt(body.stock) : null,
-      status: "ACTIVE",
-      ...(body.categorySlug
-        ? { category: { connect: { slug: body.categorySlug } } }
-        : {}),
-      translations: {
-        create: Object.entries(translations).map(([locale, t]) => ({
-          locale,
-          name: t.name,
-          description: t.description,
-          isAuto: locale !== "fr",
-        })),
-      },
-    },
-    include: { translations: true, images: true, category: true },
+  let categoryId: string | null = null;
+  if (body.categorySlug) {
+    const { data: cat } = await supabase
+      .from("Category")
+      .select("id")
+      .eq("slug", body.categorySlug)
+      .single();
+    categoryId = cat?.id ?? null;
+  }
+
+  const productId = randomUUID();
+  const now = new Date().toISOString();
+
+  const { error: insertErr } = await supabase.from("Product").insert({
+    id: productId,
+    slug,
+    type: body.type ?? "SELF",
+    source: body.source ?? "NONE",
+    sourceUrl: body.sourceUrl || null,
+    categoryId,
+    priceMGA,
+    basePriceCNY: body.priceCNY ?? null,
+    weightKg: body.weightKg ?? null,
+    stock: body.stock ? parseInt(body.stock) : null,
+    status: "ACTIVE",
+    createdAt: now,
+    updatedAt: now,
   });
+  if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 });
+
+  const translationRows = Object.entries(translations).map(([locale, t]) => ({
+    id: randomUUID(),
+    productId,
+    locale,
+    name: t.name,
+    description: t.description,
+    isAuto: locale !== "fr",
+  }));
+  await supabase.from("ProductTranslation").insert(translationRows);
+
+  const { data: product } = await supabase
+    .from("Product")
+    .select(PRODUCT_SELECT)
+    .eq("id", productId)
+    .single();
 
   return NextResponse.json(product, { status: 201 });
 }

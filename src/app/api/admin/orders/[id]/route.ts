@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MOCK_ORDERS, type OrderStatus } from "@/lib/mock-orders";
+import { supabase } from "@/lib/db";
+
+type OrderStatus =
+  | "DRAFT" | "QUOTED" | "DEPOSIT_PENDING" | "DEPOSIT_PAID"
+  | "PROCURING" | "PURCHASED" | "AT_CN_WAREHOUSE"
+  | "BALANCE_PENDING" | "BALANCE_PAID" | "INTL_SHIPPING"
+  | "ARRIVED_MG" | "READY_FOR_PICKUP" | "COMPLETED"
+  | "CANCELLED" | "REFUNDED";
 
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   DRAFT: ["QUOTED", "DEPOSIT_PENDING", "CANCELLED"],
@@ -19,6 +26,20 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   REFUNDED: [],
 };
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { data, error } = await supabase
+    .from("Order")
+    .select(`*, user:User(*), items:OrderItem(*, product:Product(id, slug, translations:ProductTranslation(*))), payments:Payment(*)`)
+    .or(`id.eq.${id},orderNo.eq.${id}`)
+    .single();
+  if (error || !data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(data);
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,16 +47,17 @@ export async function PATCH(
   const { id } = await params;
   const { status, note } = await req.json() as { status?: string; note?: string };
 
-  if (!status) {
-    return NextResponse.json({ error: "status required" }, { status: 400 });
-  }
+  if (!status) return NextResponse.json({ error: "status required" }, { status: 400 });
 
-  const order = MOCK_ORDERS.find((o) => o.id === id || o.orderNo === id);
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
+  const { data: order, error: fetchErr } = await supabase
+    .from("Order")
+    .select("id, orderNo, status")
+    .or(`id.eq.${id},orderNo.eq.${id}`)
+    .single();
 
-  const allowed = VALID_TRANSITIONS[order.status] ?? [];
+  if (fetchErr || !order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+  const allowed = VALID_TRANSITIONS[order.status as OrderStatus] ?? [];
   if (!allowed.includes(status as OrderStatus)) {
     return NextResponse.json(
       { error: `Cannot transition from ${order.status} to ${status}` },
@@ -43,18 +65,23 @@ export async function PATCH(
     );
   }
 
-  // TODO (DB): await db.order.update({ where: { id }, data: { status, note, updatedAt: new Date() } })
-  console.log(`[Order ${id}] ${order.status} → ${status}${note ? ` | ${note}` : ""}`);
+  const updates: Record<string, unknown> = {
+    status,
+    updatedAt: new Date().toISOString(),
+  };
+  if (note) updates.internalNotes = note;
 
-  return NextResponse.json({ id, orderNo: order.orderNo, status, updatedAt: new Date().toISOString() });
-}
+  const { error: updateErr } = await supabase
+    .from("Order")
+    .update(updates)
+    .eq("id", order.id);
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const order = MOCK_ORDERS.find((o) => o.id === id || o.orderNo === id);
-  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(order);
+  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
+  return NextResponse.json({
+    id: order.id,
+    orderNo: order.orderNo,
+    status,
+    updatedAt: new Date().toISOString(),
+  });
 }

@@ -1,4 +1,5 @@
-import { OrderStatus, ProductType } from "@prisma/client";
+type OrderStatus = "DRAFT" | "QUOTED" | "DEPOSIT_PENDING" | "DEPOSIT_PAID" | "PROCURING" | "PURCHASED" | "AT_CN_WAREHOUSE" | "BALANCE_PENDING" | "BALANCE_PAID" | "INTL_SHIPPING" | "ARRIVED_MG" | "READY_FOR_PICKUP" | "COMPLETED" | "CANCELLED" | "REFUNDED";
+type ProductType = "SELF" | "AGENT";
 
 type Transition = {
   from: OrderStatus;

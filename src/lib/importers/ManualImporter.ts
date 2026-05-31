@@ -1,4 +1,4 @@
-import { SourcePlatform } from "@prisma/client";
+type SourcePlatform = "NONE" | "TAOBAO" | "TMALL" | "PINDUODUO" | "JD" | "ALIBABA1688" | "OTHER";
 
 export interface ManualImportInput {
   sourceUrl: string;

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email";
+import { randomUUID } from "crypto";
 
 interface OrderItem {
   id: string;
@@ -20,12 +22,12 @@ interface CreateOrderBody {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
   paymentMethod: string;
+  email?: string;
   locale?: string;
 }
 
 function generateOrderNo(): string {
-  const now = new Date();
-  const date = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const suffix = Math.floor(Math.random() * 9000 + 1000);
   return `MS-${date}-${suffix}`;
 }
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { items, shippingAddress, paymentMethod } = body as CreateOrderBody;
+  const { items, shippingAddress, paymentMethod, email } = body as CreateOrderBody;
 
   if (!items?.length || !shippingAddress || !paymentMethod) {
     return NextResponse.json(
@@ -50,27 +52,78 @@ export async function POST(req: NextRequest) {
   const totalMGA = items.reduce((s, i) => s + i.priceMGA * i.qty, 0);
   const depositMGA = Math.ceil(totalMGA * 0.3);
   const orderNo = generateOrderNo();
-  const orderId = `ord-${Date.now()}`;
+  const orderId = randomUUID();
+  const now = new Date().toISOString();
 
-  // TODO (DB): await db.order.create({
-  //   data: {
-  //     id: orderId, orderNo, status: "DEPOSIT_PENDING", type: "SELF",
-  //     totalMGA, depositMGA, balanceDueMGA: totalMGA - depositMGA,
-  //     shippingName: shippingAddress.name,
-  //     shippingPhone: shippingAddress.phone,
-  //     shippingAddress: shippingAddress.address,
-  //     shippingCity: shippingAddress.city,
-  //     items: { create: items.map(i => ({ productId: i.id, qty: i.qty, unitPriceMGA: i.priceMGA })) },
-  //   }
-  // });
+  // Find or create guest user
+  let userId: string;
+  const { data: existingUser } = await supabase
+    .from("User")
+    .select("id")
+    .eq("phone", shippingAddress.phone)
+    .single();
 
-  console.log("[Order Created]", { orderId, orderNo, customer: shippingAddress.name, totalMGA, depositMGA });
+  if (existingUser) {
+    userId = existingUser.id;
+  } else {
+    const newUserId = randomUUID();
+    await supabase.from("User").insert({
+      id: newUserId,
+      phone: shippingAddress.phone,
+      email: email ?? null,
+      name: shippingAddress.name,
+      role: "CUSTOMER",
+      locale: (body as CreateOrderBody).locale ?? "fr",
+      createdAt: now,
+      updatedAt: now,
+    });
+    userId = newUserId;
+  }
 
-  // Send confirmation email (silent fail if RESEND not configured)
-  const customerEmail = (body as CreateOrderBody & { email?: string }).email;
-  if (customerEmail) {
+  // Create order
+  const { error: orderErr } = await supabase.from("Order").insert({
+    id: orderId,
+    orderNo,
+    userId,
+    type: "SELF",
+    status: "DEPOSIT_PENDING",
+    totalAmount: totalMGA.toString(),
+    depositAmount: depositMGA.toString(),
+    productCost: totalMGA.toString(),
+    domesticShipping: "0",
+    intlShipping: "0",
+    serviceFee: "0",
+    customsFee: "0",
+    miscFee: "0",
+    currency: "MGA",
+    shippingInfo: {
+      name: shippingAddress.name,
+      phone: shippingAddress.phone,
+      address: shippingAddress.address,
+      city: shippingAddress.city,
+      paymentMethod,
+    },
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 });
+
+  // Create order items
+  const itemRows = items.map((i) => ({
+    id: randomUUID(),
+    orderId,
+    productId: i.id ?? null,
+    titleSnapshot: i.name,
+    qty: i.qty,
+    unitPriceMGA: i.priceMGA.toString(),
+  }));
+  await supabase.from("OrderItem").insert(itemRows);
+
+  // Send confirmation email (silent fail)
+  if (email) {
     sendOrderConfirmation({
-      to: customerEmail,
+      to: email,
       customerName: shippingAddress.name,
       orderNo,
       items: items.map((i) => ({ name: i.name, qty: i.qty, priceMGA: i.priceMGA })),
@@ -80,11 +133,5 @@ export async function POST(req: NextRequest) {
     }).catch(() => {});
   }
 
-  return NextResponse.json({
-    orderId,
-    orderNo,
-    status: "DEPOSIT_PENDING",
-    totalMGA,
-    depositMGA,
-  });
+  return NextResponse.json({ orderId, orderNo, status: "DEPOSIT_PENDING", totalMGA, depositMGA });
 }
