@@ -1,0 +1,74 @@
+import { NextRequest, NextResponse } from "next/server";
+import { Pool } from "pg";
+
+// TEMPORARY ROUTE — delete after use
+// Called once to enable RLS on Supabase tables
+
+const RLS_SQL = `
+ALTER TABLE "Product" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProductTranslation" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ProductImage" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Category" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "CategoryTranslation" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Order" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "OrderItem" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Payment" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Setting" ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='Product' AND policyname='public_read_active_products') THEN
+    CREATE POLICY "public_read_active_products" ON "Product" FOR SELECT TO anon USING (status = 'ACTIVE');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='ProductTranslation' AND policyname='public_read_product_translations') THEN
+    CREATE POLICY "public_read_product_translations" ON "ProductTranslation" FOR SELECT TO anon USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='ProductImage' AND policyname='public_read_product_images') THEN
+    CREATE POLICY "public_read_product_images" ON "ProductImage" FOR SELECT TO anon USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='Category' AND policyname='public_read_categories') THEN
+    CREATE POLICY "public_read_categories" ON "Category" FOR SELECT TO anon USING (true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='CategoryTranslation' AND policyname='public_read_category_translations') THEN
+    CREATE POLICY "public_read_category_translations" ON "CategoryTranslation" FOR SELECT TO anon USING (true);
+  END IF;
+END $$;
+`;
+
+export async function POST(req: NextRequest) {
+  const secret = req.headers.get("x-run-secret");
+  if (secret !== process.env.ADMIN_SESSION_TOKEN) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query(RLS_SQL);
+      return NextResponse.json({ ok: true, message: "RLS policies applied successfully" });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } finally {
+    await pool.end();
+  }
+}
