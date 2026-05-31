@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Send, Loader2, Link as LinkIcon } from "lucide-react";
-import type { MockLocale } from "@/lib/mock-data";
+import type { Locale as MockLocale } from "@/components/product/ProductCard";
 
 interface Props {
   locale: MockLocale;

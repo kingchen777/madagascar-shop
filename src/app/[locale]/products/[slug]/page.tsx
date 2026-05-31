@@ -4,8 +4,9 @@ import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { getMockProduct, type MockLocale } from "@/lib/mock-data";
 import { formatMGA, formatCNY } from "@/lib/pricing";
+import { supabase } from "@/lib/db";
+import type { Locale } from "@/components/product/ProductCard";
 import {
   ShoppingCart,
   Package,
@@ -22,11 +23,15 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const product = getMockProduct(slug);
+  const { data: product } = await supabase
+    .from("Product")
+    .select("translations")
+    .eq("slug", slug)
+    .single();
   if (!product) return { title: "Not found" };
-  const loc = locale as MockLocale;
-  const translation = product.translations[loc] ?? product.translations.fr;
-  return { title: translation.name };
+  const trans = product.translations as Record<string, { name: string }> | null;
+  const name = trans?.[locale]?.name ?? trans?.["fr"]?.name ?? slug;
+  return { title: name };
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -40,15 +45,22 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
-  const product = getMockProduct(slug);
+  const t = await getTranslations({ locale, namespace: "product" });
+  const loc = locale as Locale;
+
+  const { data: product } = await supabase
+    .from("Product")
+    .select("id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg, images, translations, category:Category(slug, name)")
+    .eq("slug", slug)
+    .single();
+
   if (!product) notFound();
 
-  const loc = locale as MockLocale;
-  const t = await getTranslations({ locale, namespace: "product" });
-  const translation = product.translations[loc] ?? product.translations.fr;
-
-  // Parse simple markdown-like description
-  const descriptionLines = translation.description.split("\n");
+  const trans = product.translations as Record<string, { name: string; description: string; isAuto?: boolean }> | null ?? {};
+  const translation = trans[loc] ?? trans["fr"] ?? { name: product.slug, description: "", isAuto: false };
+  const images = (product.images as string[] | null) ?? [];
+  const category = product.category as unknown as { slug: string; name: Record<string, string> } | null;
+  const descriptionLines = (translation.description ?? "").split("\n");
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
@@ -59,18 +71,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-amber-600 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
-          {t("add_to_cart").includes("Ajouter")
-            ? "Retour aux produits"
-            : "Back to products"}
+          {t("add_to_cart").includes("Ajouter") ? "Retour aux produits" : "Back to products"}
         </Link>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* ── Image ── */}
+        {/* Image */}
         <div className="space-y-3">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
             <Image
-              src={product.images[0] ?? "/placeholder.png"}
+              src={images[0] ?? "/placeholder.png"}
               alt={translation.name}
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
@@ -87,11 +97,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* ── Info ── */}
+        {/* Info */}
         <div className="flex flex-col gap-5">
           {/* Category */}
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">
-            {product.category.name[loc]}
+            {category?.name?.[loc] ?? category?.name?.["fr"] ?? ""}
           </p>
 
           {/* Title */}
@@ -162,7 +172,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             {product.type === "SELF" ? (
               <>
-                <AddToCartButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: product.images[0] }} />
+                <AddToCartButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: images[0] ?? null }} />
                 <Link
                   href={`/${locale}/checkout?product=${product.slug}`}
                   className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-500 px-6 text-white font-semibold hover:bg-amber-600 transition-colors gap-2"
@@ -184,31 +194,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* ── Description ── */}
+      {/* Description */}
       <div className="mt-12 border-t border-gray-100 pt-10">
         <h2 className="text-xl font-bold text-gray-900 mb-5">{t("description")}</h2>
         <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed space-y-2">
           {descriptionLines.map((line, i) => {
             if (line.startsWith("**") && line.endsWith("**")) {
-              return (
-                <p key={i} className="font-semibold text-gray-800">
-                  {line.slice(2, -2)}
-                </p>
-              );
+              return <p key={i} className="font-semibold text-gray-800">{line.slice(2, -2)}</p>;
             }
             if (line.startsWith("- ")) {
-              return (
-                <p key={i} className="pl-4 before:content-['•'] before:mr-2 before:text-amber-500">
-                  {line.slice(2)}
-                </p>
-              );
+              return <p key={i} className="pl-4 before:content-['•'] before:mr-2 before:text-amber-500">{line.slice(2)}</p>;
             }
             if (line.startsWith("⚠️")) {
-              return (
-                <p key={i} className="text-amber-700 bg-amber-50 rounded-lg px-3 py-2 text-sm">
-                  {line}
-                </p>
-              );
+              return <p key={i} className="text-amber-700 bg-amber-50 rounded-lg px-3 py-2 text-sm">{line}</p>;
             }
             if (line.trim() === "") return null;
             return <p key={i}>{line}</p>;

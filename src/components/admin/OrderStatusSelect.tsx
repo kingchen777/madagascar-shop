@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
-import type { OrderStatus } from "@/lib/mock-orders";
+type OrderStatus = "DRAFT" | "QUOTED" | "DEPOSIT_PENDING" | "DEPOSIT_PAID" | "PROCURING" | "PURCHASED" | "AT_CN_WAREHOUSE" | "BALANCE_PENDING" | "BALANCE_PAID" | "INTL_SHIPPING" | "ARRIVED_MG" | "READY_FOR_PICKUP" | "COMPLETED" | "CANCELLED" | "REFUNDED";
 
 const NEXT_STATUSES: Partial<Record<OrderStatus, OrderStatus[]>> = {
   DRAFT: ["QUOTED", "DEPOSIT_PENDING"],

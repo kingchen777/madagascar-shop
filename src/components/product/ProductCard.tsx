@@ -2,12 +2,29 @@ import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { formatMGA } from "@/lib/pricing";
-import type { MockProduct, MockLocale } from "@/lib/mock-data";
 import { ShoppingCart, Package } from "lucide-react";
 
+export type Locale = "fr" | "en" | "zh";
+
+export type DBProduct = {
+  id: string;
+  slug: string;
+  type: "SELF" | "AGENT";
+  priceMGA: number;
+  basePriceCNY: number | null;
+  stock: number | null;
+  status: string;
+  source: string;
+  sourceUrl: string | null;
+  weightKg: number | null;
+  images: string[] | null;
+  translations: Record<string, { name: string; description: string; isAuto?: boolean }> | null;
+  category: { slug: string; name: Record<string, string> } | null;
+};
+
 interface ProductCardProps {
-  product: MockProduct;
-  locale: MockLocale;
+  product: DBProduct;
+  locale: Locale;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -15,12 +32,15 @@ const SOURCE_LABELS: Record<string, string> = {
   JD: "京东", ALIBABA1688: "1688", OTHER: "Chine",
 };
 
-const ADD_LABELS: Record<MockLocale, string> = {
+const ADD_LABELS: Record<Locale, string> = {
   fr: "Ajouter", en: "Add", zh: "加购",
 };
 
 export function ProductCard({ product, locale }: ProductCardProps) {
-  const translation = product.translations[locale] ?? product.translations.fr;
+  const trans = product.translations ?? {};
+  const translation = trans[locale] ?? trans["fr"] ?? { name: product.slug, description: "" };
+  const images = product.images ?? [];
+  const categoryName = product.category?.name?.[locale] ?? product.category?.name?.["fr"] ?? "";
 
   return (
     <Link
@@ -29,7 +49,7 @@ export function ProductCard({ product, locale }: ProductCardProps) {
     >
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <Image
-          src={product.images[0] ?? "/placeholder.png"}
+          src={images[0] ?? "/placeholder.png"}
           alt={translation.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -50,9 +70,7 @@ export function ProductCard({ product, locale }: ProductCardProps) {
       </div>
 
       <div className="flex flex-col flex-1 p-4 gap-2">
-        <p className="text-xs text-gray-400 font-medium">
-          {product.category.name[locale]}
-        </p>
+        <p className="text-xs text-gray-400 font-medium">{categoryName}</p>
         <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-amber-600 transition-colors">
           {translation.name}
         </h3>
@@ -72,3 +90,6 @@ export function ProductCard({ product, locale }: ProductCardProps) {
     </Link>
   );
 }
+
+// Keep backward-compat export for AgentOrderForm
+export type { ADD_LABELS };

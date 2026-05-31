@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Loader2, Check } from "lucide-react";
-import { MOCK_CATEGORIES } from "@/lib/mock-data";
-
 type Locale = "fr" | "en" | "zh";
 type ProductType = "SELF" | "AGENT";
 type Source = "NONE" | "TAOBAO" | "JD" | "PINDUODUO" | "ALIBABA1688" | "TMALL";
@@ -32,6 +30,11 @@ const SOURCES: Source[] = ["NONE", "TAOBAO", "JD", "PINDUODUO", "ALIBABA1688", "
 const LOCALE_LABELS: Record<Locale, string> = { fr: "Français", en: "English", zh: "中文" };
 const EMPTY_TRANSLATION: TranslationFields = { name: "", description: "" };
 
+interface Category {
+  slug: string;
+  name: Record<string, string>;
+}
+
 const DEFAULT_FORM: FormState = {
   slug: "",
   type: "SELF",
@@ -41,7 +44,7 @@ const DEFAULT_FORM: FormState = {
   priceCNY: "",
   weightKg: "",
   stock: "",
-  categorySlug: MOCK_CATEGORIES[0]?.slug ?? "",
+  categorySlug: "",
   translations: {
     fr: { ...EMPTY_TRANSLATION },
     en: { ...EMPTY_TRANSLATION },
@@ -55,6 +58,7 @@ export default function EditProductPage() {
   const id = params.id as string;
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -63,6 +67,14 @@ export default function EditProductPage() {
   const [translated, setTranslated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Load categories
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((data: Category[]) => setCategories(data))
+      .catch(() => {});
+  }, []);
 
   // Load existing product
   useEffect(() => {
@@ -93,7 +105,6 @@ export default function EditProductPage() {
           categorySlug:
             (data.categorySlug as string) ??
             (data.category as { slug?: string } | undefined)?.slug ??
-            MOCK_CATEGORIES[0]?.slug ??
             "",
           translations: translationsMap,
         });
@@ -237,8 +248,8 @@ export default function EditProductPage() {
                 onChange={(e) => setForm((f) => ({ ...f, categorySlug: e.target.value }))}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none"
               >
-                {MOCK_CATEGORIES.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name.fr}</option>
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug}>{c.name["fr"] ?? c.slug}</option>
                 ))}
               </select>
             </div>

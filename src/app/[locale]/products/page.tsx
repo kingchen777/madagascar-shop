@@ -1,8 +1,7 @@
-import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { ProductCard } from "@/components/product/ProductCard";
-import { MOCK_PRODUCTS, MOCK_CATEGORIES, type MockLocale } from "@/lib/mock-data";
+import { ProductCard, type Locale, type DBProduct } from "@/components/product/ProductCard";
+import { supabase } from "@/lib/db";
 
 export async function generateMetadata({
   params,
@@ -22,26 +21,60 @@ interface PageProps {
 export default async function ProductsPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   const { category } = await searchParams;
-  const loc = locale as MockLocale;
+  const loc = locale as Locale;
 
-  const activeProducts = MOCK_PRODUCTS.filter((p) => p.status === "ACTIVE");
+  const { data: productsData } = await supabase
+    .from("Product")
+    .select("id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg, images, translations, category:Category(slug, name)")
+    .eq("status", "ACTIVE")
+    .order("createdAt", { ascending: false });
+
+  const allProducts = (productsData ?? []) as unknown as DBProduct[];
   const filtered = category
-    ? activeProducts.filter((p) => p.category.slug === category)
-    : activeProducts;
+    ? allProducts.filter((p) => p.category?.slug === category)
+    : allProducts;
+
+  const { data: categoriesData } = await supabase
+    .from("Category")
+    .select("slug, name")
+    .order("slug");
+  const categories = (categoriesData ?? []) as { slug: string; name: Record<string, string> }[];
+
+  const allLabel: Record<Locale, string> = { fr: "Tous", en: "All", zh: "全部" };
+  const pageTitle: Record<Locale, string> = {
+    fr: "Tous nos produits", en: "All Products", zh: "全部商品",
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-      {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-          <ProductsTitle locale={loc} />
-        </h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{pageTitle[loc]}</h1>
         <p className="text-gray-500 text-sm">{filtered.length} produits disponibles</p>
       </div>
 
       {/* Category filters */}
       <div className="flex flex-wrap gap-2 mb-8">
-        <CategoryFilter locale={loc} activeCategory={category} />
+        <a
+          href={`/${locale}/products`}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            !category ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+          }`}
+        >
+          {allLabel[loc]}
+        </a>
+        {categories.map((cat) => (
+          <a
+            key={cat.slug}
+            href={`/${locale}/products?category=${cat.slug}`}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              category === cat.slug
+                ? "bg-amber-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
+            }`}
+          >
+            {cat.name[loc] ?? cat.name["fr"] ?? cat.slug}
+          </a>
+        ))}
       </div>
 
       {/* Product grid */}
@@ -57,56 +90,5 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
         </div>
       )}
     </div>
-  );
-}
-
-function ProductsTitle({ locale }: { locale: MockLocale }) {
-  const labels: Record<MockLocale, string> = {
-    fr: "Tous nos produits",
-    en: "All Products",
-    zh: "全部商品",
-  };
-  return <>{labels[locale]}</>;
-}
-
-function CategoryFilter({
-  locale,
-  activeCategory,
-}: {
-  locale: MockLocale;
-  activeCategory?: string;
-}) {
-  const allLabel: Record<MockLocale, string> = {
-    fr: "Tous",
-    en: "All",
-    zh: "全部",
-  };
-
-  return (
-    <>
-      <a
-        href={`/${locale}/products`}
-        className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-          !activeCategory
-            ? "bg-amber-500 text-white"
-            : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
-        }`}
-      >
-        {allLabel[locale]}
-      </a>
-      {MOCK_CATEGORIES.map((cat) => (
-        <a
-          key={cat.slug}
-          href={`/${locale}/products?category=${cat.slug}`}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeCategory === cat.slug
-              ? "bg-amber-500 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
-          }`}
-        >
-          {cat.name[locale]}
-        </a>
-      ))}
-    </>
   );
 }
