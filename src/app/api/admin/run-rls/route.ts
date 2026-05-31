@@ -54,27 +54,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // v5 — direct connection
+  // v6 — session pooler (port 5432) with decoded password
   const pool = new Pool({
-    host: "db.uanvkasbfrcssejpelrn.supabase.co",
+    host: "aws-0-ap-southeast-1.pooler.supabase.com",
     port: 5432,
     database: "postgres",
-    user: "postgres",
+    user: "postgres.uanvkasbfrcssejpelrn",
     password: "CHJchj@11!@#",
     ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 15000,
   });
 
   try {
     const client = await pool.connect();
     try {
       await client.query(RLS_SQL);
-      return NextResponse.json({ ok: true, message: "RLS policies applied successfully", version: "v5" });
+      return NextResponse.json({ ok: true, message: "RLS policies applied successfully", version: "v6" });
     } finally {
       client.release();
     }
   } catch (err) {
-    return NextResponse.json({ error: String(err), version: "v5" }, { status: 500 });
+    return NextResponse.json({ error: String(err), version: "v6" }, { status: 500 });
   } finally {
     await pool.end();
   }
