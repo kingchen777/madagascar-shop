@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Pencil, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/db";
+import { DeleteProductButton } from "@/components/admin/DeleteProductButton";
 
 function formatMGA(n: number | string) {
   return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
@@ -152,12 +153,7 @@ export default async function AdminProductsPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>
-                      <button
-                        className="text-gray-400 hover:text-red-500 transition-colors"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <DeleteProductButton id={p.id} name={nameFr} />
                     </div>
                   </td>
                 </tr>
