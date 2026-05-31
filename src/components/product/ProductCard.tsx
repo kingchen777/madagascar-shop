@@ -6,6 +6,13 @@ import { ShoppingCart, Package } from "lucide-react";
 
 export type Locale = "fr" | "en" | "zh";
 
+export type ProductTranslation = {
+  locale: string;
+  name: string;
+  description: string;
+  isAuto?: boolean;
+};
+
 export type DBProduct = {
   id: string;
   slug: string;
@@ -17,10 +24,23 @@ export type DBProduct = {
   source: string;
   sourceUrl: string | null;
   weightKg: number | null;
-  images: string[] | null;
-  translations: Record<string, { name: string; description: string; isAuto?: boolean }> | null;
-  category: { slug: string; name: Record<string, string> } | null;
+  translations: ProductTranslation[];
+  images: { url: string; sort: number }[];
+  category: {
+    slug: string;
+    categoryTranslations: { locale: string; name: string }[];
+  } | null;
 };
+
+export function getProductTranslation(translations: ProductTranslation[], locale: string) {
+  return translations.find((t) => t.locale === locale) ?? translations.find((t) => t.locale === "fr") ?? { name: "", description: "", isAuto: false };
+}
+
+export function getCategoryName(cat: DBProduct["category"], locale: string): string {
+  if (!cat) return "";
+  const t = cat.categoryTranslations.find((t) => t.locale === locale) ?? cat.categoryTranslations.find((t) => t.locale === "fr");
+  return t?.name ?? cat.slug;
+}
 
 interface ProductCardProps {
   product: DBProduct;
@@ -32,15 +52,10 @@ const SOURCE_LABELS: Record<string, string> = {
   JD: "京东", ALIBABA1688: "1688", OTHER: "Chine",
 };
 
-const ADD_LABELS: Record<Locale, string> = {
-  fr: "Ajouter", en: "Add", zh: "加购",
-};
-
 export function ProductCard({ product, locale }: ProductCardProps) {
-  const trans = product.translations ?? {};
-  const translation = trans[locale] ?? trans["fr"] ?? { name: product.slug, description: "" };
-  const images = product.images ?? [];
-  const categoryName = product.category?.name?.[locale] ?? product.category?.name?.["fr"] ?? "";
+  const translation = getProductTranslation(product.translations, locale);
+  const firstImage = [...(product.images ?? [])].sort((a, b) => a.sort - b.sort)[0]?.url ?? "/placeholder.png";
+  const categoryName = getCategoryName(product.category, locale);
 
   return (
     <Link
@@ -49,7 +64,7 @@ export function ProductCard({ product, locale }: ProductCardProps) {
     >
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <Image
-          src={images[0] ?? "/placeholder.png"}
+          src={firstImage}
           alt={translation.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -62,9 +77,7 @@ export function ProductCard({ product, locale }: ProductCardProps) {
             </Badge>
           )}
           {translation.isAuto && (
-            <Badge variant="outline" className="bg-white/80 text-[10px]">
-              Auto
-            </Badge>
+            <Badge variant="outline" className="bg-white/80 text-[10px]">Auto</Badge>
           )}
         </div>
       </div>
@@ -79,17 +92,10 @@ export function ProductCard({ product, locale }: ProductCardProps) {
             {formatMGA(product.priceMGA)}
           </span>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
-            {product.type === "AGENT" ? (
-              <Package className="h-4 w-4" />
-            ) : (
-              <ShoppingCart className="h-4 w-4" />
-            )}
+            {product.type === "AGENT" ? <Package className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
           </div>
         </div>
       </div>
     </Link>
   );
 }
-
-// Keep backward-compat export for AgentOrderForm
-export type { ADD_LABELS };
