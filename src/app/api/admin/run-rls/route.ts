@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Direct DB connection — bypasses pooler, works from Vercel (AWS to AWS)
+  // v5 — direct connection
   const pool = new Pool({
     host: "db.uanvkasbfrcssejpelrn.supabase.co",
     port: 5432,
@@ -62,18 +62,19 @@ export async function POST(req: NextRequest) {
     user: "postgres",
     password: "CHJchj@11!@#",
     ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
   });
 
   try {
     const client = await pool.connect();
     try {
       await client.query(RLS_SQL);
-      return NextResponse.json({ ok: true, message: "RLS policies applied successfully" });
+      return NextResponse.json({ ok: true, message: "RLS policies applied successfully", version: "v5" });
     } finally {
       client.release();
     }
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: String(err), version: "v5" }, { status: 500 });
   } finally {
     await pool.end();
   }
