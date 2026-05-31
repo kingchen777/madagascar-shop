@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { AgentOrderForm } from "@/components/product/AgentOrderForm";
 import { Package, ShieldCheck, Clock, Truck } from "lucide-react";
-import type { MockLocale } from "@/lib/mock-data";
+import type { Locale as MockLocale } from "@/components/product/ProductCard";
 
 export async function generateMetadata({
   params,
