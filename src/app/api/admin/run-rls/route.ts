@@ -54,11 +54,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Use session pooler URL (port 5432) — Vercel can reach Supabase pooler
-  const connStr = process.env.DATABASE_URL
-    ?? "postgresql://postgres.uanvkasbfrcssejpelrn:CHJchj%4011%21%40%23@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres";
+  // Transaction pooler port 6543 — supports DDL from Vercel
   const pool = new Pool({
-    connectionString: connStr,
+    connectionString: "postgresql://postgres.uanvkasbfrcssejpelrn:CHJchj%4011%21%40%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
     ssl: { rejectUnauthorized: false },
   });
 
