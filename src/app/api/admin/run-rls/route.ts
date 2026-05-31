@@ -54,9 +54,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Transaction pooler port 6543 — supports DDL from Vercel
+  // Direct DB connection — bypasses pooler, works from Vercel (AWS to AWS)
   const pool = new Pool({
-    connectionString: "postgresql://postgres.uanvkasbfrcssejpelrn:CHJchj%4011%21%40%23@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres",
+    host: "db.uanvkasbfrcssejpelrn.supabase.co",
+    port: 5432,
+    database: "postgres",
+    user: "postgres",
+    password: "CHJchj@11!@#",
     ssl: { rejectUnauthorized: false },
   });
 
