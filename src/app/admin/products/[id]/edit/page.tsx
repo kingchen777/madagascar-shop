@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Loader2, Check } from "lucide-react";
+import { ImageUploader, type UploadedImage } from "@/components/admin/ImageUploader";
 type Locale = "fr" | "en" | "zh";
 type ProductType = "SELF" | "AGENT";
 type Source = "NONE" | "TAOBAO" | "JD" | "PINDUODUO" | "ALIBABA1688" | "TMALL";
@@ -58,6 +59,8 @@ export default function EditProductPage() {
   const id = params.id as string;
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -108,10 +111,25 @@ export default function EditProductPage() {
             "",
           translations: translationsMap,
         });
+
+        const existingImages = (data.images as Array<{ id: string; url: string }> | undefined) ?? [];
+        setImages(existingImages.map((img) => ({ id: img.id, url: img.url })));
       })
       .catch(() => setLoadError("Impossible de charger le produit."))
       .finally(() => setLoading(false));
   }, [id]);
+
+  function handleImagesChange(next: UploadedImage[]) {
+    // Track which saved images were removed
+    const nextUrls = new Set(next.map((i) => i.url));
+    const justRemoved = images
+      .filter((i) => i.id && !nextUrls.has(i.url))
+      .map((i) => i.id!);
+    if (justRemoved.length) {
+      setRemovedImageIds((prev) => [...prev, ...justRemoved]);
+    }
+    setImages(next);
+  }
 
   function setTranslation(locale: Locale, field: keyof TranslationFields, value: string) {
     setForm((f) => ({
@@ -168,10 +186,15 @@ export default function EditProductPage() {
     setSaving(true);
     setSaveError("");
     try {
+      const addImageUrls = images.filter((i) => !i.id).map((i) => i.url);
       const res = await fetch(`/api/admin/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          addImageUrls,
+          removeImageIds: removedImageIds,
+        }),
       });
       if (!res.ok) {
         const data = await res.json() as { error?: string };
@@ -340,6 +363,12 @@ export default function EditProductPage() {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-amber-400 focus:outline-none"
             />
           </div>
+        </section>
+
+        {/* Images */}
+        <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Images</h2>
+          <ImageUploader images={images} onChange={handleImagesChange} />
         </section>
 
         {/* Translations */}

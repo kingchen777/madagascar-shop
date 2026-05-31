@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/db";
+import { randomUUID } from "crypto";
 
 const PRODUCT_SELECT = `*, translations:ProductTranslation(*), images:ProductImage(*), category:Category(*)`;
 
@@ -33,6 +34,8 @@ export async function PATCH(
     stock?: string;
     status?: string;
     translations?: Record<string, { name: string; description: string }>;
+    addImageUrls?: string[];
+    removeImageIds?: string[];
   };
 
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
@@ -56,6 +59,29 @@ export async function PATCH(
         { onConflict: "productId,locale" }
       );
     }
+  }
+
+  if (body.removeImageIds?.length) {
+    await supabase.from("ProductImage").delete().in("id", body.removeImageIds);
+  }
+
+  if (body.addImageUrls?.length) {
+    // Find current max sort value
+    const { data: existingImages } = await supabase
+      .from("ProductImage")
+      .select("sort")
+      .eq("productId", id)
+      .order("sort", { ascending: false })
+      .limit(1);
+    const maxSort = existingImages?.[0]?.sort ?? -1;
+    const imageRows = body.addImageUrls.map((url, i) => ({
+      id: randomUUID(),
+      productId: id,
+      url,
+      alt: null,
+      sort: maxSort + 1 + i,
+    }));
+    await supabase.from("ProductImage").insert(imageRows);
   }
 
   const { data: product } = await supabase

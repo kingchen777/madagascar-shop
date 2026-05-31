@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     stock?: string;
     categorySlug?: string;
     translations?: Record<string, { name: string; description: string }>;
+    imageUrls?: string[];
   };
 
   const { slug, priceMGA, translations } = body;
@@ -75,6 +76,17 @@ export async function POST(req: NextRequest) {
     isAuto: locale !== "fr",
   }));
   await supabase.from("ProductTranslation").insert(translationRows);
+
+  if (body.imageUrls?.length) {
+    const imageRows = body.imageUrls.map((url, i) => ({
+      id: randomUUID(),
+      productId,
+      url,
+      alt: null,
+      sort: i,
+    }));
+    await supabase.from("ProductImage").insert(imageRows);
+  }
 
   const { data: product } = await supabase
     .from("Product")

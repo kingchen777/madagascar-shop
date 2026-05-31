@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Loader2, Check } from "lucide-react";
+import { ImageUploader, type UploadedImage } from "@/components/admin/ImageUploader";
 
 type Locale = "fr" | "en" | "zh";
 type ProductType = "SELF" | "AGENT";
@@ -49,6 +50,7 @@ export function NewProductForm({ categories }: { categories: Category[] }) {
     translations: { fr: { ...EMPTY_TRANSLATION }, en: { ...EMPTY_TRANSLATION }, zh: { ...EMPTY_TRANSLATION } },
   });
 
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [translating, setTranslating] = useState(false);
   const [translateError, setTranslateError] = useState("");
   const [translated, setTranslated] = useState(false);
@@ -111,7 +113,7 @@ export function NewProductForm({ categories }: { categories: Category[] }) {
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, imageUrls: images.map((i) => i.url) }),
       });
       if (!res.ok) {
         const data = await res.json() as { error?: string };
@@ -267,6 +269,11 @@ export function NewProductForm({ categories }: { categories: Category[] }) {
                 />
                 <p className="mt-1 text-xs text-gray-400">Auto-généré depuis le nom français</p>
               </div>
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Images</h2>
+              <ImageUploader images={images} onChange={setImages} />
             </section>
 
             <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-5">
