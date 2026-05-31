@@ -54,7 +54,7 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export function ProductCard({ product, locale }: ProductCardProps) {
   const translation = getProductTranslation(product.translations, locale);
-  const firstImage = [...(product.images ?? [])].sort((a, b) => a.sort - b.sort)[0]?.url ?? "/placeholder.png";
+  const firstImage = [...(product.images ?? [])].sort((a, b) => a.sort - b.sort)[0]?.url ?? null;
   const categoryName = getCategoryName(product.category, locale);
 
   return (
@@ -62,14 +62,20 @@ export function ProductCard({ product, locale }: ProductCardProps) {
       href={`/${locale}/products/${product.slug}`}
       className="group flex flex-col rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
     >
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
-        <Image
-          src={firstImage}
-          alt={translation.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
+        {firstImage ? (
+          <Image
+            src={firstImage}
+            alt={translation.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-gray-300">
+            <Package className="h-12 w-12" />
+          </div>
+        )}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {product.type === "AGENT" && (
             <Badge className="bg-amber-500 text-white text-[10px] px-2 py-0.5 shadow">

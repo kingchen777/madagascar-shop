@@ -88,15 +88,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Image */}
         <div className="space-y-3">
-          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
-            <Image
-              src={images[0] ?? "/placeholder.png"}
-              alt={translation.name}
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-              priority
-            />
+          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
+            {images[0] ? (
+              <Image
+                src={images[0]}
+                alt={translation.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-gray-300">
+                <Package className="h-20 w-20" />
+              </div>
+            )}
             {product.type === "AGENT" && (
               <div className="absolute top-3 left-3">
                 <Badge className="bg-amber-500 text-white shadow-md">
