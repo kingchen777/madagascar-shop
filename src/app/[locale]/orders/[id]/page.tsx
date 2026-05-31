@@ -3,13 +3,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeft, CheckCircle, Circle, Clock } from "lucide-react";
-import {
-  getMockOrder,
-  SELF_STEPS,
-  AGENT_STEPS,
-  getStepIndex,
-  type OrderStatus,
-} from "@/lib/mock-orders";
+import { supabase } from "@/lib/db";
+
+const SELF_STEPS = [
+  "DRAFT",
+  "DEPOSIT_PENDING",
+  "DEPOSIT_PAID",
+  "READY_FOR_PICKUP",
+  "COMPLETED",
+];
+
+const AGENT_STEPS = [
+  "DRAFT",
+  "QUOTED",
+  "DEPOSIT_PENDING",
+  "DEPOSIT_PAID",
+  "PROCURING",
+  "PURCHASED",
+  "AT_CN_WAREHOUSE",
+  "BALANCE_PENDING",
+  "BALANCE_PAID",
+  "INTL_SHIPPING",
+  "ARRIVED_MG",
+  "READY_FOR_PICKUP",
+  "COMPLETED",
+];
+
+function getStepIndex(status: string, type: string): number {
+  const steps = type === "SELF" ? SELF_STEPS : AGENT_STEPS;
+  const idx = steps.indexOf(status);
+  return idx === -1 ? 0 : idx;
+}
 
 const STATUS_LABEL_FR: Record<string, string> = {
   DRAFT: "Brouillon",
@@ -29,8 +53,8 @@ const STATUS_LABEL_FR: Record<string, string> = {
   REFUNDED: "Remboursé",
 };
 
-function formatMGA(n: number) {
-  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(n) + " Ar";
+function formatMGA(n: string | number) {
+  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
 }
 
 function formatDate(iso: string) {
@@ -48,12 +72,38 @@ export default async function OrderDetailPage({ params }: Props) {
   const { locale, id } = await params;
   const t = await getTranslations({ locale, namespace: "order" });
 
-  const order = getMockOrder(id);
+  const { data: order } = await supabase
+    .from("Order")
+    .select(`
+      id, orderNo, status, type, note,
+      totalAmount, depositAmount, serviceAmount, shippingAmount, customsAmount,
+      createdAt,
+      items:OrderItem(id, titleSnapshot, imageSnapshot, unitPrice, qty)
+    `)
+    .eq("id", id)
+    .single();
+
   if (!order) notFound();
 
   const steps = order.type === "SELF" ? SELF_STEPS : AGENT_STEPS;
   const currentStep = getStepIndex(order.status, order.type);
   const isCancelled = order.status === "CANCELLED" || order.status === "REFUNDED";
+
+  const items = order.items as {
+    id: string;
+    titleSnapshot: string;
+    imageSnapshot: string | null;
+    unitPrice: string;
+    qty: number;
+  }[] | null ?? [];
+
+  const totalAmount = Number(order.totalAmount ?? 0);
+  const depositAmount = Number(order.depositAmount ?? 0);
+  const serviceAmount = Number(order.serviceAmount ?? 0);
+  const shippingAmount = Number(order.shippingAmount ?? 0);
+  const customsAmount = Number(order.customsAmount ?? 0);
+  const productCost = totalAmount - serviceAmount - shippingAmount - customsAmount;
+  const balanceDue = Math.max(totalAmount - depositAmount, 0);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -145,13 +195,13 @@ export default async function OrderDetailPage({ params }: Props) {
               Articles commandés
             </h2>
             <div className="space-y-3">
-              {order.items.map((item) => (
+              {items.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  {item.productImage && (
+                  {item.imageSnapshot && (
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                       <Image
-                        src={item.productImage}
-                        alt={item.productName}
+                        src={item.imageSnapshot}
+                        alt={item.titleSnapshot}
                         fill
                         className="object-cover"
                         sizes="64px"
@@ -160,13 +210,13 @@ export default async function OrderDetailPage({ params }: Props) {
                   )}
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
-                      {item.productName}
+                      {item.titleSnapshot}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatMGA(item.unitPriceMGA)} × {item.qty}
+                      {formatMGA(item.unitPrice)} × {item.qty}
                     </p>
                     <p className="text-sm font-semibold text-amber-700">
-                      {formatMGA(item.unitPriceMGA * item.qty)}
+                      {formatMGA(Number(item.unitPrice) * item.qty)}
                     </p>
                   </div>
                 </div>
@@ -182,29 +232,29 @@ export default async function OrderDetailPage({ params }: Props) {
               Détail des frais
             </h2>
 
-            <Row label={t("product_cost")} value={formatMGA(order.productCostMGA)} />
-            {order.serviceFeeMGA > 0 && (
-              <Row label={t("service_fee")} value={formatMGA(order.serviceFeeMGA)} />
+            <Row label={t("product_cost")} value={formatMGA(productCost)} />
+            {serviceAmount > 0 && (
+              <Row label={t("service_fee")} value={formatMGA(serviceAmount)} />
             )}
-            {order.intlShippingMGA > 0 && (
-              <Row label={t("intl_shipping")} value={formatMGA(order.intlShippingMGA)} />
+            {shippingAmount > 0 && (
+              <Row label={t("intl_shipping")} value={formatMGA(shippingAmount)} />
             )}
-            {order.customsFeeMGA > 0 && (
-              <Row label={t("customs_fee")} value={formatMGA(order.customsFeeMGA)} />
+            {customsAmount > 0 && (
+              <Row label={t("customs_fee")} value={formatMGA(customsAmount)} />
             )}
 
             <div className="border-t pt-2">
-              <Row label={t("total_amount")} value={formatMGA(order.totalMGA)} bold />
+              <Row label={t("total_amount")} value={formatMGA(totalAmount)} bold />
             </div>
             <Row
               label={t("deposit")}
-              value={`- ${formatMGA(order.depositMGA)}`}
+              value={`- ${formatMGA(depositAmount)}`}
               className="text-green-600"
             />
             <div className="border-t pt-2">
               <Row
                 label={t("balance_due")}
-                value={formatMGA(Math.max(order.balanceDueMGA, 0))}
+                value={formatMGA(balanceDue)}
                 bold
                 className="text-amber-700"
               />
@@ -213,12 +263,12 @@ export default async function OrderDetailPage({ params }: Props) {
             {/* Action buttons based on status */}
             {order.status === "DEPOSIT_PENDING" && (
               <button className="mt-4 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors">
-                {t("pay_deposit")} — {formatMGA(order.depositMGA)}
+                {t("pay_deposit")} — {formatMGA(depositAmount)}
               </button>
             )}
             {order.status === "BALANCE_PENDING" && (
               <button className="mt-4 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors">
-                {t("pay_balance")} — {formatMGA(order.balanceDueMGA)}
+                {t("pay_balance")} — {formatMGA(balanceDue)}
               </button>
             )}
           </div>

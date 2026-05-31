@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { ShoppingBag, Package, TrendingUp, Clock, ChevronRight } from "lucide-react";
-import { MOCK_ORDERS } from "@/lib/mock-orders";
-import { MOCK_PRODUCTS } from "@/lib/mock-data";
+import { supabase } from "@/lib/db";
 
-function formatMGA(n: number) {
-  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(n) + " Ar";
+function formatMGA(n: string | number) {
+  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -26,19 +25,36 @@ const STATUS_FR: Record<string, string> = {
   CANCELLED: "Annulé",
 };
 
-export default function AdminDashboard() {
-  const totalRevenue = MOCK_ORDERS.reduce((s, o) => s + o.depositMGA, 0);
-  const pending = MOCK_ORDERS.filter((o) =>
+export default async function AdminDashboard() {
+  const { data: ordersData } = await supabase
+    .from("Order")
+    .select("id, orderNo, status, totalAmount, depositAmount, createdAt, user:User(name)")
+    .order("createdAt", { ascending: false });
+  const orders = ordersData ?? [];
+
+  const { data: productsData } = await supabase
+    .from("Product")
+    .select("id, slug, type, priceMGA, stock, translations")
+    .order("createdAt", { ascending: false })
+    .limit(5);
+  const products = productsData ?? [];
+
+  const { count: productCount } = await supabase
+    .from("Product")
+    .select("id", { count: "exact", head: true });
+
+  const totalDeposit = orders.reduce((s, o) => s + Number(o.depositAmount ?? 0), 0);
+  const pending = orders.filter((o) =>
     ["DEPOSIT_PENDING", "BALANCE_PENDING"].includes(o.status)
   ).length;
-  const active = MOCK_ORDERS.filter((o) =>
+  const active = orders.filter((o) =>
     !["COMPLETED", "CANCELLED", "REFUNDED", "DRAFT"].includes(o.status)
   ).length;
 
   const stats = [
     {
       label: "Commandes totales",
-      value: MOCK_ORDERS.length,
+      value: orders.length,
       icon: ShoppingBag,
       color: "bg-blue-50 text-blue-600",
     },
@@ -56,7 +72,7 @@ export default function AdminDashboard() {
     },
     {
       label: "Acomptes encaissés",
-      value: formatMGA(totalRevenue),
+      value: formatMGA(totalDeposit),
       icon: TrendingUp,
       color: "bg-green-50 text-green-600",
     },
@@ -89,7 +105,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <ul className="divide-y divide-gray-100">
-            {MOCK_ORDERS.slice(0, 4).map((o) => (
+            {orders.slice(0, 4).map((o) => (
               <li key={o.id}>
                 <Link
                   href={`/admin/orders/${o.id}`}
@@ -97,51 +113,62 @@ export default function AdminDashboard() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{o.orderNo}</p>
-                    <p className="text-xs text-gray-500 truncate">{o.customer.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{(o.user as { name?: string } | null)?.name ?? "—"}</p>
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[o.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {STATUS_FR[o.status] ?? o.status}
                     </span>
-                    <p className="mt-0.5 text-xs text-gray-500">{formatMGA(o.totalMGA)}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{formatMGA(o.totalAmount)}</p>
                   </div>
                 </Link>
               </li>
             ))}
+            {orders.length === 0 && (
+              <li className="px-5 py-6 text-center text-sm text-gray-400">Aucune commande</li>
+            )}
           </ul>
         </div>
 
         {/* Products overview */}
         <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Produits ({MOCK_PRODUCTS.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Produits ({productCount ?? 0})</h2>
             <Link href="/admin/products" className="text-xs text-amber-600 hover:underline flex items-center gap-0.5">
               Gérer <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
           <ul className="divide-y divide-gray-100">
-            {MOCK_PRODUCTS.slice(0, 5).map((p) => (
-              <li key={p.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {p.translations.fr.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {p.type === "AGENT" ? "Agent" : "Direct"} · {p.category.name.fr}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-amber-700">
-                    {formatMGA(p.priceMGA)}
-                  </p>
-                  {p.stock !== undefined && (
-                    <p className={`text-xs ${p.stock < 5 ? "text-red-500" : "text-gray-400"}`}>
-                      Stock: {p.stock}
+            {products.map((p) => {
+              const trans = p.translations as Record<string, { name?: string }> | null;
+              const nameFr = trans?.fr?.name ?? p.slug;
+              return (
+                <li key={p.id} className="flex items-center gap-3 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{nameFr}</p>
+                    <p className="text-xs text-gray-500">
+                      {p.type === "AGENT" ? "Agent" : "Direct"}
                     </p>
-                  )}
-                </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-amber-700">
+                      {formatMGA(p.priceMGA)}
+                    </p>
+                    {p.stock != null && (
+                      <p className={`text-xs ${p.stock < 5 ? "text-red-500" : "text-gray-400"}`}>
+                        Stock: {p.stock}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+            {products.length === 0 && (
+              <li className="px-5 py-6 text-center text-sm text-gray-400">
+                <Package className="mx-auto h-8 w-8 text-gray-200 mb-2" />
+                Aucun produit
               </li>
-            ))}
+            )}
           </ul>
         </div>
       </div>

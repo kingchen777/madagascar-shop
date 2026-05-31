@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Package, ChevronRight, Clock } from "lucide-react";
-import { getMockOrders, type OrderStatus } from "@/lib/mock-orders";
+import { supabase } from "@/lib/db";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-600",
@@ -21,8 +21,26 @@ const STATUS_COLOR: Record<string, string> = {
   REFUNDED: "bg-gray-100 text-gray-600",
 };
 
-function formatMGA(n: number) {
-  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(n) + " Ar";
+const STATUS_FR: Record<string, string> = {
+  DRAFT: "Brouillon",
+  QUOTED: "Devis envoyé",
+  DEPOSIT_PENDING: "Acompte en attente",
+  DEPOSIT_PAID: "Acompte payé",
+  PROCURING: "Achat en cours",
+  PURCHASED: "Acheté",
+  AT_CN_WAREHOUSE: "Entrepôt CN",
+  BALANCE_PENDING: "Solde en attente",
+  BALANCE_PAID: "Solde payé",
+  INTL_SHIPPING: "En transit",
+  ARRIVED_MG: "Arrivé MG",
+  READY_FOR_PICKUP: "Prêt à retirer",
+  COMPLETED: "Terminé",
+  CANCELLED: "Annulé",
+  REFUNDED: "Remboursé",
+};
+
+function formatMGA(n: string | number) {
+  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
 }
 
 function formatDate(iso: string) {
@@ -38,9 +56,13 @@ interface Props {
 export default async function OrdersPage({ params }: Props) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "order" });
-  const tStatus = await getTranslations({ locale, namespace: "status" });
 
-  const orders = getMockOrders();
+  const { data: ordersData } = await supabase
+    .from("Order")
+    .select("id, orderNo, status, totalAmount, createdAt, items:OrderItem(titleSnapshot)")
+    .order("createdAt", { ascending: false });
+
+  const orders = ordersData ?? [];
 
   if (orders.length === 0) {
     return (
@@ -63,8 +85,9 @@ export default async function OrdersPage({ params }: Props) {
 
       <div className="space-y-3">
         {orders.map((order) => {
-          const firstItem = order.items[0];
-          const extraCount = order.items.length - 1;
+          const items = order.items as { titleSnapshot: string }[] | null ?? [];
+          const firstItem = items[0];
+          const extraCount = items.length - 1;
 
           return (
             <Link
@@ -84,13 +107,13 @@ export default async function OrdersPage({ params }: Props) {
                     {order.orderNo}
                   </span>
                   <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[order.status as string] ?? "bg-gray-100 text-gray-600"}`}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-600"}`}
                   >
-                    {tStatus(order.status as OrderStatus)}
+                    {STATUS_FR[order.status] ?? order.status}
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-sm text-gray-500">
-                  {firstItem.productName}
+                  {firstItem?.titleSnapshot ?? "—"}
                   {extraCount > 0 && (
                     <span className="text-gray-400"> +{extraCount} article{extraCount > 1 ? "s" : ""}</span>
                   )}
@@ -101,7 +124,7 @@ export default async function OrdersPage({ params }: Props) {
                     {formatDate(order.createdAt)}
                   </span>
                   <span className="font-medium text-amber-700">
-                    {formatMGA(order.totalMGA)}
+                    {formatMGA(order.totalAmount)}
                   </span>
                 </div>
               </div>
