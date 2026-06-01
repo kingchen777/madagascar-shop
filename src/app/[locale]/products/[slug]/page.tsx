@@ -1,21 +1,16 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
-import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatMGA, formatCNY } from "@/lib/pricing";
 import { supabase } from "@/lib/db";
-import type { Locale } from "@/components/product/ProductCard";
-import {
-  ShoppingCart,
-  Package,
-  Weight,
-  ChevronLeft,
-  ExternalLink,
-  Info,
-} from "lucide-react";
+import { ProductCard, type Locale, type DBProduct } from "@/components/product/ProductCard";
+import { ReviewSection } from "@/components/product/ReviewSection";
+import { Package, Weight, ChevronLeft, ExternalLink, Info } from "lucide-react";
 import { AddToCartButton } from "@/components/product/AddToCartButton";
+import { BuyNowButton } from "@/components/product/BuyNowButton";
+import { ImageGallery } from "@/components/product/ImageGallery";
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -25,13 +20,42 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale, slug } = await params;
   const { data: product } = await supabase
     .from("Product")
-    .select("translations:ProductTranslation(locale, name)")
+    .select(`
+      translations:ProductTranslation(locale, name, description),
+      images:ProductImage(url, sort)
+    `)
     .eq("slug", slug)
     .single();
+
   if (!product) return { title: "Not found" };
-  const trans = (product.translations as { locale: string; name: string }[] | null) ?? [];
-  const name = trans.find((t) => t.locale === locale)?.name ?? trans.find((t) => t.locale === "fr")?.name ?? slug;
-  return { title: name };
+
+  const trans = (product.translations as { locale: string; name: string; description: string }[] | null) ?? [];
+  const t = trans.find((t) => t.locale === locale) ?? trans.find((t) => t.locale === "fr");
+  const name = t?.name ?? slug;
+  const description = t?.description ?? undefined;
+
+  const images = (product.images as { url: string; sort: number }[] | null) ?? [];
+  const coverImage = images.sort((a, b) => a.sort - b.sort)[0]?.url;
+
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://madashop.mg";
+
+  return {
+    title: name,
+    description,
+    openGraph: {
+      title: name,
+      description,
+      url: `${BASE_URL}/${locale}/products/${slug}`,
+      type: "website",
+      ...(coverImage ? { images: [{ url: coverImage }] } : {}),
+    },
+    twitter: {
+      card: coverImage ? "summary_large_image" : "summary",
+      title: name,
+      description,
+      ...(coverImage ? { images: [coverImage] } : {}),
+    },
+  };
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -72,8 +96,51 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const categoryName = category?.categoryTranslations.find((t) => t.locale === loc)?.name ?? category?.categoryTranslations.find((t) => t.locale === "fr")?.name ?? "";
   const descriptionLines = (translation.description ?? "").split("\n");
 
+  // Related products — same category, exclude current
+  let related: DBProduct[] = [];
+  if (category?.slug) {
+    const { data: relatedData } = await supabase
+      .from("Product")
+      .select(`
+        id, slug, type, priceMGA, basePriceCNY, stock, status, source, sourceUrl, weightKg,
+        translations:ProductTranslation(locale, name, description, isAuto),
+        images:ProductImage(url, sort),
+        category:Category(slug, categoryTranslations:CategoryTranslation(locale, name))
+      `)
+      .eq("status", "ACTIVE")
+      .neq("slug", slug)
+      .limit(4);
+    // Filter client-side by category slug to avoid complex join filter
+    related = ((relatedData ?? []) as unknown as DBProduct[])
+      .filter((p) => (p.category as unknown as CategoryT | null)?.slug === category.slug)
+      .slice(0, 4);
+  }
+
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://madashop.mg";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: translation.name,
+    description: translation.description || undefined,
+    image: images.length > 0 ? images : undefined,
+    url: `${BASE_URL}/${locale}/products/${slug}`,
+    offers: {
+      "@type": "Offer",
+      price: product.priceMGA,
+      priceCurrency: "MGA",
+      availability:
+        product.type === "AGENT" || (product.stock ?? 1) > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+    },
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Breadcrumb */}
       <nav className="mb-6">
         <Link
@@ -81,37 +148,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-amber-600 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
-          {t("add_to_cart").includes("Ajouter") ? "Retour aux produits" : "Back to products"}
+          {t("back_to_products")}
         </Link>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Image */}
-        <div className="space-y-3">
-          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
-            {images[0] ? (
-              <Image
-                src={images[0]}
-                alt={translation.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-gray-300">
-                <Package className="h-20 w-20" />
-              </div>
-            )}
-            {product.type === "AGENT" && (
-              <div className="absolute top-3 left-3">
-                <Badge className="bg-amber-500 text-white shadow-md">
-                  {SOURCE_LABELS[product.source] ?? "Chine"}
-                </Badge>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Image gallery */}
+        <ImageGallery
+          images={images}
+          alt={translation.name}
+          badge={
+            product.type === "AGENT" ? (
+              <Badge className="bg-amber-500 text-white shadow-md">
+                {SOURCE_LABELS[product.source] ?? "Chine"}
+              </Badge>
+            ) : undefined
+          }
+        />
 
         {/* Info */}
         <div className="flex flex-col gap-5">
@@ -156,10 +209,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           ) : (
             <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
               <Info className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
-              <span>
-                Article commandé depuis la Chine. Délai estimé :{" "}
-                <strong>3–5 semaines</strong> après confirmation et paiement de l&apos;acompte.
-              </span>
+              <span>{t("agent_lead_time")}</span>
             </div>
           )}
 
@@ -188,15 +238,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             {product.type === "SELF" ? (
               <>
-                <AddToCartButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: images[0] ?? null }} />
-
-                <Link
-                  href={`/${locale}/checkout?product=${product.slug}`}
-                  className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-500 px-6 text-white font-semibold hover:bg-amber-600 transition-colors gap-2"
-                >
-                  <ShoppingCart className="h-4 w-4" />
-                  {t("buy_now")}
-                </Link>
+                <AddToCartButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: images[0] ?? undefined }} />
+                <BuyNowButton product={{ id: product.id, slug: product.slug, name: translation.name, priceMGA: product.priceMGA, image: images[0] ?? undefined }} locale={locale} />
               </>
             ) : (
               <Link
@@ -230,6 +273,23 @@ export default async function ProductDetailPage({ params }: PageProps) {
           })}
         </div>
       </div>
+
+      {/* Reviews */}
+      <ReviewSection productId={product.id} locale={locale} />
+
+      {/* Related products */}
+      {related.length > 0 && (
+        <div className="mt-12 border-t border-gray-100 pt-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
+            {{ fr: "Produits similaires", en: "Related products", zh: "相关商品" }[locale] ?? "Produits similaires"}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} locale={loc} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

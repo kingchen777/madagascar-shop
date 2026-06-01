@@ -6,7 +6,9 @@ import { locales, type Locale } from "@/lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { CartProvider } from "@/lib/cart";
+import { supabase } from "@/lib/db";
 
 interface LocaleLayoutProps {
   children: React.ReactNode;
@@ -53,14 +55,22 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
 
+  const { data: waSetting } = await supabase
+    .from("Setting")
+    .select("value")
+    .eq("key", "contact_whatsapp")
+    .single();
+  const waNumber = (waSetting?.value ?? "").replace(/\D/g, "");
+
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
       <CartProvider>
         <Header />
         <main className="flex-1">{children}</main>
-        <Footer />
         <Toaster />
       </CartProvider>
+      <Footer locale={locale} />
+      <WhatsAppButton number={waNumber} />
     </NextIntlClientProvider>
   );
 }

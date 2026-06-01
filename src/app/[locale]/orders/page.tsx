@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Package, ChevronRight, Clock, Search } from "lucide-react";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -21,24 +21,6 @@ const STATUS_COLOR: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-700",
   CANCELLED: "bg-red-100 text-red-600",
   REFUNDED: "bg-gray-100 text-gray-600",
-};
-
-const STATUS_FR: Record<string, string> = {
-  DRAFT: "Brouillon",
-  QUOTED: "Devis envoyé",
-  DEPOSIT_PENDING: "Acompte en attente",
-  DEPOSIT_PAID: "Acompte payé",
-  PROCURING: "Achat en cours",
-  PURCHASED: "Acheté",
-  AT_CN_WAREHOUSE: "Entrepôt CN",
-  BALANCE_PENDING: "Solde en attente",
-  BALANCE_PAID: "Solde payé",
-  INTL_SHIPPING: "En transit",
-  ARRIVED_MG: "Arrivé MG",
-  READY_FOR_PICKUP: "Prêt à retirer",
-  COMPLETED: "Terminé",
-  CANCELLED: "Annulé",
-  REFUNDED: "Remboursé",
 };
 
 function formatMGA(n: string | number) {
@@ -62,13 +44,16 @@ interface Order {
 
 export default function OrdersPage() {
   const locale = useLocale();
+  const t = useTranslations("order");
+  const tStatus = useTranslations("status");
+  const tProduct = useTranslations("product");
+
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
 
-  // Pre-fill phone from last checkout
   useEffect(() => {
     try {
       const saved = localStorage.getItem("madashop_last_phone");
@@ -84,15 +69,11 @@ export default function OrdersPage() {
     setSearched(false);
     try {
       const res = await fetch(`/api/orders?phone=${encodeURIComponent(phone.trim())}`);
-      if (!res.ok) {
-        setError("Erreur lors de la recherche.");
-        return;
-      }
-      const data = await res.json() as Order[];
-      setOrders(data);
+      if (!res.ok) { setError(t("error_search")); return; }
+      setOrders(await res.json() as Order[]);
       setSearched(true);
     } catch {
-      setError("Impossible de contacter le serveur.");
+      setError(t("error_server"));
     } finally {
       setLoading(false);
     }
@@ -100,14 +81,14 @@ export default function OrdersPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Suivi de commandes</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t("tracking_title")}</h1>
 
       <form onSubmit={handleSearch} className="mb-8 flex gap-2">
         <input
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="Votre numéro de téléphone"
+          placeholder={t("phone_placeholder")}
           className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
         />
         <button
@@ -116,7 +97,7 @@ export default function OrdersPage() {
           className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
         >
           <Search className="h-4 w-4" />
-          {loading ? "…" : "Rechercher"}
+          {loading ? "…" : t("search")}
         </button>
       </form>
 
@@ -127,12 +108,12 @@ export default function OrdersPage() {
       {searched && orders !== null && orders.length === 0 && (
         <div className="text-center py-12">
           <Package className="mx-auto h-12 w-12 text-gray-300" />
-          <p className="mt-3 text-gray-500">Aucune commande trouvée pour ce numéro.</p>
+          <p className="mt-3 text-gray-500">{t("no_orders")}</p>
           <Link
             href={`/${locale}/products`}
             className="mt-4 inline-block rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
           >
-            Voir les produits
+            {tProduct("all_filter")}
           </Link>
         </div>
       )}
@@ -156,13 +137,13 @@ export default function OrdersPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-gray-900">{order.orderNo}</span>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_FR[order.status] ?? order.status}
+                      {tStatus(order.status as Parameters<typeof tStatus>[0])}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-sm text-gray-500">
                     {firstItem?.titleSnapshot ?? "—"}
                     {extraCount > 0 && (
-                      <span className="text-gray-400"> +{extraCount} article{extraCount > 1 ? "s" : ""}</span>
+                      <span className="text-gray-400"> {t("more_items", { count: extraCount })}</span>
                     )}
                   </p>
                   <div className="mt-1 flex items-center gap-3 text-xs text-gray-400">
@@ -181,9 +162,7 @@ export default function OrdersPage() {
       )}
 
       {!searched && (
-        <p className="text-center text-sm text-gray-400">
-          Entrez le numéro de téléphone utilisé lors de la commande.
-        </p>
+        <p className="text-center text-sm text-gray-400">{t("enter_phone")}</p>
       )}
     </main>
   );

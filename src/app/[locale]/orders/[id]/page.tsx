@@ -34,23 +34,6 @@ function getStepIndex(status: string, type: string): number {
   return idx === -1 ? 0 : idx;
 }
 
-const STATUS_LABEL_FR: Record<string, string> = {
-  DRAFT: "Brouillon",
-  QUOTED: "Devis envoyé",
-  DEPOSIT_PENDING: "Acompte en attente",
-  DEPOSIT_PAID: "Acompte payé",
-  PROCURING: "Achat en cours",
-  PURCHASED: "Acheté en Chine",
-  AT_CN_WAREHOUSE: "Entrepôt Chine",
-  BALANCE_PENDING: "Solde en attente",
-  BALANCE_PAID: "Solde payé",
-  INTL_SHIPPING: "En transit",
-  ARRIVED_MG: "Arrivé à Madagascar",
-  READY_FOR_PICKUP: "Prêt à retirer",
-  COMPLETED: "Terminé",
-  CANCELLED: "Annulé",
-  REFUNDED: "Remboursé",
-};
 
 function formatMGA(n: string | number) {
   return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
@@ -70,19 +53,32 @@ interface Props {
 export default async function OrderDetailPage({ params }: Props) {
   const { locale, id } = await params;
   const t = await getTranslations({ locale, namespace: "order" });
+  const tStatus = await getTranslations({ locale, namespace: "status" });
 
-  const { data: order } = await supabase
-    .from("Order")
-    .select(`
-      id, orderNo, status, type, internalNotes,
-      totalAmount, depositAmount, serviceFee, intlShipping, customsFee,
-      createdAt,
-      items:OrderItem(id, titleSnapshot, unitPriceMGA, qty)
-    `)
-    .eq("id", id)
-    .single();
+  const [{ data: order }, { data: settingsRows }] = await Promise.all([
+    supabase
+      .from("Order")
+      .select(`
+        id, orderNo, status, type, internalNotes,
+        totalAmount, depositAmount, serviceFee, intlShipping, customsFee,
+        promoCode, discountMGA,
+        createdAt,
+        items:OrderItem(id, titleSnapshot, unitPriceMGA, qty)
+      `)
+      .or(`id.eq.${id},orderNo.eq.${id}`)
+      .single(),
+    supabase
+      .from("Setting")
+      .select("key, value")
+      .in("key", ["mvola_phone", "orange_money_phone"]),
+  ]);
 
   if (!order) notFound();
+
+  const settingsMap: Record<string, string> = {};
+  for (const row of settingsRows ?? []) settingsMap[row.key] = row.value;
+  const mvolaPhone = settingsMap["mvola_phone"] ?? "";
+  const orangeMoneyPhone = settingsMap["orange_money_phone"] ?? "";
 
   const steps = order.type === "SELF" ? SELF_STEPS : AGENT_STEPS;
   const currentStep = getStepIndex(order.status, order.type);
@@ -100,6 +96,8 @@ export default async function OrderDetailPage({ params }: Props) {
   const serviceAmount = Number(order.serviceFee ?? 0);
   const shippingAmount = Number(order.intlShipping ?? 0);
   const customsAmount = Number(order.customsFee ?? 0);
+  const discountAmount = Number((order as Record<string, unknown>).discountMGA ?? 0);
+  const promoCodeApplied = (order as Record<string, unknown>).promoCode as string | null ?? null;
   const productCost = totalAmount - serviceAmount - shippingAmount - customsAmount;
   const balanceDue = Math.max(totalAmount - depositAmount, 0);
 
@@ -118,11 +116,11 @@ export default async function OrderDetailPage({ params }: Props) {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-bold text-gray-900">{order.orderNo}</h1>
           <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-            {order.type === "AGENT" ? "Commande Agent" : "Achat direct"}
+            {order.type === "AGENT" ? t("type_agent") : t("type_self")}
           </span>
         </div>
         <p className="mt-1 text-sm text-gray-500">
-          Passée le {formatDate(order.createdAt)}
+          {t("placed_on")} {formatDate(order.createdAt)}
         </p>
       </div>
 
@@ -133,7 +131,7 @@ export default async function OrderDetailPage({ params }: Props) {
           {!isCancelled && (
             <section className="rounded-xl border border-gray-200 bg-white p-5">
               <h2 className="mb-4 text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Suivi de commande
+                {t("tracking_section")}
               </h2>
               <ol className="relative space-y-4 border-l-2 border-gray-200 pl-5">
                 {steps.map((step, idx) => {
@@ -167,7 +165,7 @@ export default async function OrderDetailPage({ params }: Props) {
                             : "text-gray-400"
                         }`}
                       >
-                        {STATUS_LABEL_FR[step] ?? step}
+                        {tStatus(step as Parameters<typeof tStatus>[0])}
                       </p>
                     </li>
                   );
@@ -183,14 +181,14 @@ export default async function OrderDetailPage({ params }: Props) {
 
           {isCancelled && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Cette commande a été {order.status === "CANCELLED" ? "annulée" : "remboursée"}.
+              {order.status === "CANCELLED" ? t("cancelled_msg") : t("refunded_msg")}
             </div>
           )}
 
           {/* Items */}
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Articles commandés
+              {t("items_section")}
             </h2>
             <div className="space-y-3">
               {items.map((item) => (
@@ -216,7 +214,7 @@ export default async function OrderDetailPage({ params }: Props) {
         <div className="lg:col-span-2">
           <div className="rounded-xl border border-gray-200 bg-white p-5 sticky top-24 space-y-2 text-sm">
             <h2 className="font-semibold text-gray-700 uppercase tracking-wide text-xs mb-3">
-              Détail des frais
+              {t("fees_section")}
             </h2>
 
             <Row label={t("product_cost")} value={formatMGA(productCost)} />
@@ -228,6 +226,13 @@ export default async function OrderDetailPage({ params }: Props) {
             )}
             {customsAmount > 0 && (
               <Row label={t("customs_fee")} value={formatMGA(customsAmount)} />
+            )}
+            {discountAmount > 0 && (
+              <Row
+                label={promoCodeApplied ? `Code promo (${promoCodeApplied})` : "Réduction"}
+                value={`- ${formatMGA(discountAmount)}`}
+                className="text-green-600"
+              />
             )}
 
             <div className="border-t pt-2">
@@ -247,16 +252,22 @@ export default async function OrderDetailPage({ params }: Props) {
               />
             </div>
 
-            {/* Action buttons based on status */}
-            {order.status === "DEPOSIT_PENDING" && (
-              <button className="mt-4 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors">
-                {t("pay_deposit")} — {formatMGA(depositAmount)}
-              </button>
-            )}
-            {order.status === "BALANCE_PENDING" && (
-              <button className="mt-4 w-full rounded-xl bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors">
-                {t("pay_balance")} — {formatMGA(balanceDue)}
-              </button>
+            {/* Payment instructions */}
+            {(order.status === "DEPOSIT_PENDING" || order.status === "BALANCE_PENDING") && (
+              <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2 text-sm">
+                <p className="font-semibold text-amber-800">
+                  {order.status === "DEPOSIT_PENDING"
+                    ? `${t("pay_deposit")} : ${formatMGA(depositAmount)}`
+                    : `${t("pay_balance")} : ${formatMGA(balanceDue)}`}
+                </p>
+                <p className="text-amber-700 text-xs leading-relaxed">
+                  {t("payment_send", {
+                    mvola: mvolaPhone ? ` (${mvolaPhone})` : "",
+                    orange: orangeMoneyPhone ? ` (${orangeMoneyPhone})` : "",
+                  })}
+                </p>
+                <p className="text-xs text-amber-600 font-mono">{t("ref_label")} {order.orderNo}</p>
+              </div>
             )}
           </div>
         </div>

@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 
 export default function AccountPage() {
   const t = useTranslations("nav");
+  const ta = useTranslations("account");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -23,7 +25,7 @@ export default function AccountPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-gray-500 text-sm">Chargement…</div>
+        <div className="text-gray-500 text-sm">{tCommon("loading")}</div>
       </div>
     );
   }
@@ -38,13 +40,13 @@ export default function AccountPage() {
       href: `${base}/orders`,
       icon: ShoppingBag,
       label: t("orders"),
-      description: "Suivre vos commandes en cours",
+      description: ta("my_orders_desc"),
     },
     {
       href: `${base}/account/addresses`,
       icon: MapPin,
-      label: "Mes adresses",
-      description: "Gérer vos adresses de livraison",
+      label: ta("my_addresses"),
+      description: ta("my_addresses_desc"),
     },
   ];
 

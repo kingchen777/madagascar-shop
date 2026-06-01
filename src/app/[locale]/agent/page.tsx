@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { AgentOrderForm } from "@/components/product/AgentOrderForm";
 import { Package, ShieldCheck, Clock, Truck } from "lucide-react";
 import type { Locale as MockLocale } from "@/components/product/ProductCard";
+import { supabase } from "@/lib/db";
 
 export async function generateMetadata({
   params,
@@ -53,6 +54,18 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
   const { product: productSlug } = await searchParams;
   const loc = locale as MockLocale;
   const steps = STEPS[loc];
+  const ta = await getTranslations({ locale, namespace: "agent" });
+
+  // Fetch the product's actual sourceUrl so the form pre-fills the Chinese platform link
+  let prefillUrl: string | undefined;
+  if (productSlug) {
+    const { data: product } = await supabase
+      .from("Product")
+      .select("sourceUrl")
+      .eq("slug", productSlug)
+      .single();
+    prefillUrl = product?.sourceUrl ?? undefined;
+  }
 
   const headings: Record<MockLocale, { h1: string; sub: string }> = {
     fr: {
@@ -97,9 +110,9 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
         <div className="lg:col-span-3">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-5">
-              {loc === "fr" ? "Votre demande" : loc === "zh" ? "提交询价" : "Your Request"}
+              {ta("form_heading")}
             </h2>
-            <AgentOrderForm locale={loc} prefillSlug={productSlug} />
+            <AgentOrderForm locale={loc} prefillUrl={prefillUrl} />
           </div>
         </div>
 
@@ -108,7 +121,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
           {/* Steps */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h3 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider">
-              {loc === "fr" ? "Comment ça marche" : loc === "zh" ? "代购流程" : "How it works"}
+              {ta("how_it_works_heading")}
             </h3>
             <ol className="space-y-4">
               {steps.map((step, i) => (
@@ -128,13 +141,13 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
           {/* Trust */}
           <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5 space-y-3">
             {[
-              { icon: ShieldCheck, text: "Acompte remboursé si produit indisponible" },
-              { icon: Clock, text: "Devis envoyé sous 24h ouvrées" },
-              { icon: Truck, text: "Suivi de commande en temps réel" },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-2.5 text-sm text-amber-800">
+              { icon: ShieldCheck, key: "deposit_refundable" as const },
+              { icon: Clock, key: "quote_24h" as const },
+              { icon: Truck, key: "tracking" as const },
+            ].map(({ icon: Icon, key }) => (
+              <div key={key} className="flex items-center gap-2.5 text-sm text-amber-800">
                 <Icon className="h-4 w-4 text-amber-500 shrink-0" />
-                {text}
+                {ta(key)}
               </div>
             ))}
           </div>

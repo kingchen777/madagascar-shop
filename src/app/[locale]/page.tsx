@@ -1,8 +1,10 @@
-import { useTranslations } from "next-intl";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Truck, Clock } from "lucide-react";
+import { FeaturedProducts } from "@/components/home/FeaturedProducts";
+import type { Locale } from "@/components/product/ProductCard";
 
 export async function generateMetadata({
   params,
@@ -49,9 +51,15 @@ function TrustBadge({
   );
 }
 
-export default function HomePage() {
-  const t = useTranslations("home");
-  const navT = useTranslations("nav");
+interface HomePageProps {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function HomePage({ params }: HomePageProps) {
+  const { locale } = await params;
+  const loc = locale as Locale;
+  const t = await getTranslations({ locale, namespace: "home" });
+  const navT = await getTranslations({ locale, namespace: "nav" });
 
   return (
     <div className="flex flex-col">
@@ -90,9 +98,9 @@ export default function HomePage() {
 
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            <TrustBadge icon={ShieldCheck} label="Paiement sécurisé" />
-            <TrustBadge icon={Truck} label="Livraison dans tout Madagascar" />
-            <TrustBadge icon={Clock} label="Suivi en temps réel" />
+            <TrustBadge icon={ShieldCheck} label={t("trust_payment")} />
+            <TrustBadge icon={Truck} label={t("trust_delivery")} />
+            <TrustBadge icon={Clock} label={t("trust_tracking")} />
           </div>
         </div>
       </section>
@@ -104,7 +112,7 @@ export default function HomePage() {
             {t("how_it_works")}
           </h2>
           <p className="text-center text-gray-500 mb-10 text-sm">
-            Simple, transparent et sans stress
+            {t("how_subtitle")}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StepCard step={1} title={t("step1_title")} description={t("step1_desc")} />
@@ -119,7 +127,7 @@ export default function HomePage() {
       <section className="py-12 px-6 bg-white border-t border-gray-100">
         <div className="mx-auto max-w-4xl text-center">
           <p className="text-xs uppercase tracking-widest text-gray-400 mb-6 font-semibold">
-            Plateformes supportées
+            {t("platforms_label")}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-gray-500">
             {["淘宝 Taobao", "天猫 Tmall", "1688", "拼多多 Pinduoduo", "京东 JD.com"].map(
@@ -136,14 +144,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Featured products ────────────────────────────────── */}
+      <Suspense fallback={null}>
+        <FeaturedProducts locale={loc} />
+      </Suspense>
+
       {/* ── CTA banner ───────────────────────────────────────── */}
       <section className="py-16 px-6 bg-gradient-to-r from-amber-500 to-orange-500">
         <div className="mx-auto max-w-2xl text-center text-white">
           <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            Prêt à commander depuis la Chine ?
+            {t("cta_title")}
           </h2>
           <p className="text-amber-100 mb-8">
-            Soumettez votre lien produit et recevez un devis en 24h.
+            {t("cta_subtitle")}
           </p>
           <Link
             href="./agent"

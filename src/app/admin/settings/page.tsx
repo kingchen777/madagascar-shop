@@ -7,12 +7,22 @@ interface Settings {
   exchange_rate_cny_mga: string;
   default_deposit_pct: string;
   default_service_fee_pct: string;
+  mvola_phone: string;
+  orange_money_phone: string;
+  contact_whatsapp: string;
+  contact_phone: string;
+  contact_email: string;
 }
 
 const DEFAULTS: Settings = {
   exchange_rate_cny_mga: "640",
   default_deposit_pct: "30",
   default_service_fee_pct: "15",
+  mvola_phone: "",
+  orange_money_phone: "",
+  contact_whatsapp: "",
+  contact_phone: "",
+  contact_email: "",
 };
 
 export default function AdminSettingsPage() {
@@ -111,6 +121,51 @@ export default function AdminSettingsPage() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Numéros de paiement mobile</h2>
+            <div className="grid grid-cols-1 gap-4 text-sm">
+              {([
+                { label: "MVola (Telma)", key: "mvola_phone" as const, placeholder: "034 XX XX XX" },
+                { label: "Orange Money", key: "orange_money_phone" as const, placeholder: "032 XX XX XX" },
+              ]).map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-xs text-gray-600 mb-1">{label}</label>
+                  <input
+                    type="tel"
+                    value={settings[key]}
+                    onChange={(e) => setSettings((s) => ({ ...s, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className={inp + " w-48"}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-400">Affiché sur la page de commande et dans les e-mails de confirmation.</p>
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Coordonnées de contact</h2>
+            <div className="grid grid-cols-1 gap-4 text-sm">
+              {([
+                { label: "WhatsApp (numéro international)", key: "contact_whatsapp" as const, placeholder: "+261 34 00 000 00" },
+                { label: "Téléphone affiché", key: "contact_phone" as const, placeholder: "+261 34 00 000 00" },
+                { label: "E-mail de contact", key: "contact_email" as const, placeholder: "contact@madashop.mg" },
+              ]).map(({ label, key, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-xs text-gray-600 mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={settings[key]}
+                    onChange={(e) => setSettings((s) => ({ ...s, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className={inp + " w-72"}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-400">Affiché dans le pied de page du site.</p>
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">

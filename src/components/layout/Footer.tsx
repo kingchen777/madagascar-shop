@@ -1,13 +1,29 @@
-"use client";
-
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Package, MessageCircle, Mail, Phone } from "lucide-react";
+import { supabase } from "@/lib/db";
 
-export function Footer() {
-  const t = useTranslations("nav");
-  const locale = useLocale();
+interface FooterProps {
+  locale: string;
+}
+
+export async function Footer({ locale }: FooterProps) {
+  const t = await getTranslations({ locale, namespace: "nav" });
+  const tf = await getTranslations({ locale, namespace: "footer" });
   const base = `/${locale}`;
+
+  const { data: rows } = await supabase
+    .from("Setting")
+    .select("key, value")
+    .in("key", ["contact_whatsapp", "contact_phone", "contact_email"]);
+
+  const settings: Record<string, string> = {};
+  for (const row of rows ?? []) settings[row.key] = row.value;
+
+  const whatsapp = settings.contact_whatsapp || "261000000000";
+  const phone = settings.contact_phone || "+261 XX XXX XXXX";
+  const email = settings.contact_email || "contact@madashop.mg";
+  const whatsappHref = `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -20,27 +36,24 @@ export function Footer() {
               MadaShop
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Votre partenaire de confiance pour les achats depuis la Chine à Madagascar.
+              {tf("tagline")}
             </p>
           </div>
 
           {/* Navigation */}
           <div>
             <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">
-              Navigation
+              {tf("nav_heading")}
             </h3>
             <ul className="space-y-2">
               {[
-                { href: `${base}`, label: t("home") },
+                { href: base, label: t("home") },
                 { href: `${base}/products`, label: t("products") },
                 { href: `${base}/agent`, label: t("agent") },
                 { href: `${base}/orders`, label: t("orders") },
               ].map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm hover:text-amber-400 transition-colors"
-                  >
+                  <Link href={link.href} className="text-sm hover:text-amber-400 transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -48,10 +61,10 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* How it works */}
+          {/* Platforms */}
           <div>
             <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">
-              Services
+              {tf("services_heading")}
             </h3>
             <ul className="space-y-2 text-sm">
               <li>Taobao / Tmall</li>
@@ -64,12 +77,12 @@ export function Footer() {
           {/* Contact */}
           <div>
             <h3 className="text-white font-semibold text-sm mb-4 uppercase tracking-wider">
-              Contact
+              {tf("contact_heading")}
             </h3>
             <ul className="space-y-3">
               <li>
                 <a
-                  href="https://wa.me/261000000000"
+                  href={whatsappHref}
                   className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors"
                 >
                   <MessageCircle className="h-4 w-4 text-green-400 shrink-0" />
@@ -78,20 +91,20 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="tel:+261000000000"
+                  href={`tel:${phone.replace(/\s/g, "")}`}
                   className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors"
                 >
                   <Phone className="h-4 w-4 shrink-0" />
-                  +261 XX XXX XXXX
+                  {phone}
                 </a>
               </li>
               <li>
                 <a
-                  href="mailto:contact@madashop.mg"
+                  href={`mailto:${email}`}
                   className="flex items-center gap-2 text-sm hover:text-amber-400 transition-colors"
                 >
                   <Mail className="h-4 w-4 shrink-0" />
-                  contact@madashop.mg
+                  {email}
                 </a>
               </li>
             </ul>
@@ -100,14 +113,14 @@ export function Footer() {
 
         <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} MadaShop. Tous droits réservés.
+            © {new Date().getFullYear()} MadaShop. {tf("rights")}
           </p>
           <div className="flex items-center gap-4 text-xs text-gray-500">
             <Link href={`${base}/legal`} className="hover:text-gray-300 transition-colors">
-              Mentions légales
+              {tf("legal")}
             </Link>
             <Link href={`${base}/privacy`} className="hover:text-gray-300 transition-colors">
-              Confidentialité
+              {tf("privacy")}
             </Link>
           </div>
         </div>

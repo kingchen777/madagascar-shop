@@ -5,6 +5,11 @@ const EDITABLE_KEYS = [
   "exchange_rate_cny_mga",
   "default_deposit_pct",
   "default_service_fee_pct",
+  "mvola_phone",
+  "orange_money_phone",
+  "contact_whatsapp",
+  "contact_phone",
+  "contact_email",
 ];
 
 export async function GET() {

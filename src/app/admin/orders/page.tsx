@@ -1,25 +1,8 @@
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Download } from "lucide-react";
 import { supabase } from "@/lib/db";
-import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
+import { AdminOrdersTable } from "@/components/admin/AdminOrdersTable";
 
-function formatMGA(n: string | number) {
-  return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
-}
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-MG", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-const STATUS_BADGE: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-600", QUOTED: "bg-blue-100 text-blue-700",
-  DEPOSIT_PENDING: "bg-yellow-100 text-yellow-700", DEPOSIT_PAID: "bg-blue-100 text-blue-700",
-  PROCURING: "bg-purple-100 text-purple-700", PURCHASED: "bg-purple-100 text-purple-700",
-  AT_CN_WAREHOUSE: "bg-indigo-100 text-indigo-700", BALANCE_PENDING: "bg-orange-100 text-orange-700",
-  BALANCE_PAID: "bg-blue-100 text-blue-700", INTL_SHIPPING: "bg-cyan-100 text-cyan-700",
-  ARRIVED_MG: "bg-teal-100 text-teal-700", READY_FOR_PICKUP: "bg-green-100 text-green-700",
-  COMPLETED: "bg-green-100 text-green-700", CANCELLED: "bg-red-100 text-red-600",
-  REFUNDED: "bg-gray-100 text-gray-600",
-};
 const STATUS_FR: Record<string, string> = {
   DRAFT: "Brouillon", QUOTED: "Devis envoyé", DEPOSIT_PENDING: "Acompte en attente",
   DEPOSIT_PAID: "Acompte payé", PROCURING: "Achat en cours", PURCHASED: "Acheté",
@@ -34,16 +17,45 @@ const groups = [
   { label: "Terminées", statuses: ["COMPLETED"], color: "bg-gray-400" },
 ];
 
-export default async function AdminOrdersPage() {
-  const { data: ordersData } = await supabase
+const FILTER_GROUPS: Record<string, string[]> = {
+  DEPOSIT_PENDING: ["DEPOSIT_PENDING"],
+  PROCURING: ["PROCURING", "PURCHASED", "AT_CN_WAREHOUSE"],
+  INTL_SHIPPING: ["INTL_SHIPPING", "ARRIVED_MG"],
+  READY_FOR_PICKUP: ["READY_FOR_PICKUP"],
+  COMPLETED: ["COMPLETED"],
+};
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const { status: filterStatus } = await searchParams;
+
+  let query = supabase
     .from("Order")
     .select(`*, user:User(name, phone), items:OrderItem(titleSnapshot)`)
     .order("createdAt", { ascending: false });
+
+  if (filterStatus && FILTER_GROUPS[filterStatus]) {
+    query = query.in("status", FILTER_GROUPS[filterStatus]);
+  }
+
+  const { data: ordersData } = await query;
   const orders = ordersData ?? [];
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Commandes ({orders.length})</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Commandes ({orders.length})</h1>
+        <a
+          href="/api/admin/orders/export"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-amber-400 hover:text-amber-700 transition-colors"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Exporter CSV
+        </a>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {groups.map((g) => {
@@ -61,56 +73,24 @@ export default async function AdminOrdersPage() {
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <button className="rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white">Toutes</button>
+        <Link
+          href="/admin/orders"
+          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${!filterStatus ? "bg-gray-900 text-white" : "border border-gray-200 text-gray-600 hover:border-amber-400 hover:text-amber-700"}`}
+        >
+          Toutes
+        </Link>
         {["DEPOSIT_PENDING", "PROCURING", "INTL_SHIPPING", "READY_FOR_PICKUP", "COMPLETED"].map((s) => (
-          <button key={s} className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 hover:border-amber-400 hover:text-amber-700 transition-colors">
+          <Link
+            key={s}
+            href={`/admin/orders?status=${s}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${filterStatus === s ? "bg-gray-900 text-white" : "border border-gray-200 text-gray-600 hover:border-amber-400 hover:text-amber-700"}`}
+          >
             {STATUS_FR[s]}
-          </button>
+          </Link>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {["N° commande", "Client", "Articles", "Type", "Total", "Acompte", "Statut", "Date", ""].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {orders.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">Aucune commande</td></tr>
-            ) : orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900 whitespace-nowrap">{order.orderNo}</td>
-                <td className="px-4 py-3">
-                  <p className="text-sm font-medium text-gray-900">{order.user?.name ?? "—"}</p>
-                  <p className="text-xs text-gray-400">{order.user?.phone ?? "—"}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <p className="text-sm text-gray-700 max-w-[160px] truncate">{order.items?.[0]?.titleSnapshot ?? "—"}</p>
-                  {order.items?.length > 1 && <p className="text-xs text-gray-400">+{order.items.length - 1} autre(s)</p>}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${order.type === "AGENT" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>{order.type}</span>
-                </td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-800 whitespace-nowrap">{formatMGA(order.totalAmount)}</td>
-                <td className="px-4 py-3 text-sm text-green-700 whitespace-nowrap">{formatMGA(order.depositAmount)}</td>
-                <td className="px-4 py-3">
-                  <OrderStatusSelect orderId={order.id} initialStatus={order.status} />
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(order.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <Link href={`/fr/orders/${order.id}`} target="_blank" className="text-gray-400 hover:text-amber-600 transition-colors" title="Voir commande client">
-                    <Eye className="h-4 w-4" />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AdminOrdersTable orders={orders} />
     </div>
   );
 }

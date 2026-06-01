@@ -41,7 +41,7 @@ export default function CartPage() {
           onClick={clear}
           className="text-sm text-red-500 hover:text-red-700 transition-colors"
         >
-          Tout vider
+          {t("clear_all")}
         </button>
       </div>
 
@@ -134,12 +134,12 @@ export default function CartPage() {
             </div>
 
             <div className="border-t pt-3 flex justify-between font-bold text-gray-900">
-              <span>Total</span>
+              <span>{t("total")}</span>
               <span className="text-amber-700">{formatMGA(totalMGA)}</span>
             </div>
 
             <p className="mt-2 text-xs text-gray-400">
-              Livraison calculée à la commande
+              {t("shipping_note")}
             </p>
 
             <Link href={`/${locale}/checkout`} className="block mt-4">

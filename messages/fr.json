@@ -8,7 +8,8 @@
     "account": "Mon compte",
     "login": "Connexion",
     "logout": "Déconnexion",
-    "admin": "Administration"
+    "admin": "Administration",
+    "wishlist": "Mes favoris"
   },
   "home": {
     "hero_title": "Votre partenaire d'achat en Chine",
@@ -23,7 +24,16 @@
     "step3_title": "Nous achetons pour vous",
     "step3_desc": "Notre équipe achète votre produit en Chine et le fait livrer à Madagascar",
     "step4_title": "Récupérez votre colis",
-    "step4_desc": "Payez le solde et récupérez votre commande — ou faites-vous livrer"
+    "step4_desc": "Payez le solde et récupérez votre commande — ou faites-vous livrer",
+    "trust_payment": "Paiement sécurisé",
+    "trust_delivery": "Livraison dans tout Madagascar",
+    "trust_tracking": "Suivi en temps réel",
+    "how_subtitle": "Simple, transparent et sans stress",
+    "platforms_label": "Plateformes supportées",
+    "cta_title": "Prêt à commander depuis la Chine ?",
+    "cta_subtitle": "Soumettez votre lien produit et recevez un devis en 24h.",
+    "featured_title": "Nos produits populaires",
+    "featured_link": "Voir tous les produits"
   },
   "product": {
     "add_to_cart": "Ajouter au panier",
@@ -38,7 +48,14 @@
     "source": "Source",
     "auto_translated": "Traduction automatique",
     "weight": "Poids",
-    "sku": "Référence"
+    "sku": "Référence",
+    "back_to_products": "Retour aux produits",
+    "agent_lead_time": "Article commandé depuis la Chine. Délai estimé : 3–5 semaines après confirmation et paiement de l'acompte.",
+    "all_title": "Tous nos produits",
+    "count_available": "{count} produits disponibles",
+    "search_placeholder": "Rechercher un produit…",
+    "no_products": "Aucun produit trouvé",
+    "all_filter": "Tous"
   },
   "cart": {
     "title": "Mon panier",
@@ -47,7 +64,10 @@
     "subtotal": "Sous-total",
     "checkout": "Passer la commande",
     "continue_shopping": "Continuer mes achats",
-    "remove": "Supprimer"
+    "remove": "Supprimer",
+    "clear_all": "Tout vider",
+    "total": "Total",
+    "shipping_note": "Livraison calculée à la commande"
   },
   "checkout": {
     "title": "Validation de commande",
@@ -55,7 +75,32 @@
     "payment_method": "Mode de paiement",
     "order_summary": "Récapitulatif",
     "place_order": "Confirmer la commande",
-    "deposit_note": "Un acompte de {pct}% est requis pour valider cette commande."
+    "deposit_note": "Un acompte de {pct}% est requis pour valider cette commande.",
+    "back_to_cart": "Retour au panier",
+    "empty_cart": "Votre panier est vide.",
+    "view_products": "Voir les produits",
+    "order_confirmed": "Commande confirmée !",
+    "contact_24h": "Nous vous contacterons sous 24h pour confirmer le paiement.",
+    "deposit_required": "Acompte requis :",
+    "track_order": "Suivre ma commande →",
+    "all_orders": "Toutes mes commandes",
+    "required_field": "Requis",
+    "processing": "Traitement…",
+    "field_name": "Nom complet",
+    "field_phone": "Téléphone",
+    "field_email": "E-mail (facultatif)",
+    "field_address": "Adresse",
+    "field_city": "Ville",
+    "shipping": "Livraison",
+    "shipping_tbc": "À confirmer",
+    "deposit_label": "Acompte ({pct}%)",
+    "success_title": "Commande passée !",
+    "success_subtitle": "Votre commande a bien été enregistrée. Nous vous contacterons sous 24h.",
+    "order_number": "N° de commande",
+    "payment_method_label": "Mode de paiement",
+    "next_steps_title": "Prochaines étapes",
+    "next_steps_body": "Effectuez votre acompte via le mode de paiement choisi puis envoyez une capture d'écran à notre équipe pour valider votre commande.",
+    "continue_shopping": "Continuer mes achats"
   },
   "order": {
     "title": "Mes commandes",
@@ -74,7 +119,25 @@
     "total_amount": "Total",
     "pay_deposit": "Payer l'acompte",
     "pay_balance": "Payer le solde",
-    "upload_proof": "Télécharger le justificatif"
+    "upload_proof": "Télécharger le justificatif",
+    "tracking_title": "Suivi de commandes",
+    "phone_placeholder": "Votre numéro de téléphone",
+    "search": "Rechercher",
+    "no_orders": "Aucune commande trouvée pour ce numéro.",
+    "enter_phone": "Entrez le numéro de téléphone utilisé lors de la commande.",
+    "more_items": "+{count} article(s)",
+    "error_search": "Erreur lors de la recherche.",
+    "error_server": "Impossible de contacter le serveur.",
+    "type_agent": "Commande Agent",
+    "type_self": "Achat direct",
+    "placed_on": "Passée le",
+    "tracking_section": "Suivi de commande",
+    "items_section": "Articles commandés",
+    "fees_section": "Détail des frais",
+    "cancelled_msg": "Cette commande a été annulée.",
+    "refunded_msg": "Cette commande a été remboursée.",
+    "payment_send": "Envoyez le montant via MVola{mvola}, Orange Money{orange} ou virement bancaire, puis partagez le justificatif à notre équipe. Votre commande sera confirmée sous 24h.",
+    "ref_label": "Réf :"
   },
   "status": {
     "DRAFT": "Brouillon",
@@ -111,6 +174,38 @@
     "forgot_password": "Mot de passe oublié ?",
     "no_account": "Pas encore de compte ?",
     "already_account": "Déjà un compte ?"
+  },
+  "account": {
+    "my_orders_desc": "Suivre vos commandes en cours",
+    "my_addresses": "Mes adresses",
+    "my_addresses_desc": "Gérer vos adresses de livraison",
+    "back": "Mon compte",
+    "saved": "Enregistré",
+    "no_addresses": "Aucune adresse enregistrée",
+    "default_badge": "Par défaut",
+    "set_default": "Par défaut",
+    "new_address": "Nouvelle adresse",
+    "add_address": "Ajouter une adresse",
+    "login_title": "Bon retour !",
+    "login_sub": "Connectez-vous pour suivre vos commandes",
+    "register_title": "Créer un compte",
+    "register_sub": "Rejoignez MadaShop et commandez depuis la Chine"
+  },
+  "footer": {
+    "tagline": "Votre partenaire de confiance pour les achats depuis la Chine à Madagascar.",
+    "nav_heading": "Navigation",
+    "services_heading": "Services",
+    "contact_heading": "Contact",
+    "rights": "Tous droits réservés.",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité"
+  },
+  "agent": {
+    "form_heading": "Votre demande",
+    "how_it_works_heading": "Comment ça marche",
+    "deposit_refundable": "Acompte remboursé si produit indisponible",
+    "quote_24h": "Devis envoyé sous 24h ouvrées",
+    "tracking": "Suivi de commande en temps réel"
   },
   "common": {
     "loading": "Chargement...",

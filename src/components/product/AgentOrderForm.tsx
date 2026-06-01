@@ -7,7 +7,7 @@ import type { Locale as MockLocale } from "@/components/product/ProductCard";
 
 interface Props {
   locale: MockLocale;
-  prefillSlug?: string;
+  prefillUrl?: string;
 }
 
 const LABELS: Record<MockLocale, {
@@ -73,11 +73,11 @@ const LABELS: Record<MockLocale, {
   },
 };
 
-export function AgentOrderForm({ locale, prefillSlug }: Props) {
+export function AgentOrderForm({ locale, prefillUrl }: Props) {
   const L = LABELS[locale];
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    url: prefillSlug ? `https://madashop.mg/products/${prefillSlug}` : "",
+    url: prefillUrl ?? "",
     name: "",
     spec: "",
     qty: "1",

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ShoppingCart, Menu, X, Package, User } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { ShoppingCart, Menu, X, Package, User, Heart } from "lucide-react";
+import { useWishlist } from "@/lib/wishlist";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -18,6 +19,8 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, loading } = useAuth();
   const { totalItems } = useCart();
+  const { ids: wishlistIds } = useWishlist();
+  const pathname = usePathname();
 
   const base = `/${locale}`;
 
@@ -50,7 +53,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-gray-600 hover:text-amber-600 transition-colors"
+              className={`text-sm font-medium transition-colors ${pathname.startsWith(link.href) ? "text-amber-600" : "text-gray-600 hover:text-amber-600"}`}
             >
               {link.label}
             </Link>
@@ -60,6 +63,17 @@ export function Header() {
         {/* Right actions */}
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
+
+          <Link href={`${base}/wishlist`} className="hidden sm:block">
+            <Button variant="ghost" size="icon" className="relative">
+              <Heart className={`h-5 w-5 transition-colors ${wishlistIds.length > 0 ? "fill-red-500 text-red-500" : ""}`} />
+              {wishlistIds.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {wishlistIds.length > 9 ? "9+" : wishlistIds.length}
+                </span>
+              )}
+            </Button>
+          </Link>
 
           <Link href={`${base}/cart`}>
             <Button variant="ghost" size="icon" className="relative">
@@ -118,11 +132,41 @@ export function Header() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                    className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith(link.href) ? "bg-amber-50 text-amber-700" : "text-gray-700 hover:bg-amber-50 hover:text-amber-700"}`}
                   >
                     {link.label}
                   </Link>
                 ))}
+                <Link
+                  href={`${base}/cart`}
+                  onClick={() => setMobileOpen(false)}
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${pathname.startsWith(`${base}/cart`) ? "bg-amber-50 text-amber-700" : "text-gray-700 hover:bg-amber-50 hover:text-amber-700"}`}
+                >
+                  <span className="flex items-center gap-2">
+                    <ShoppingCart className="h-4 w-4" />
+                    {t("cart")}
+                  </span>
+                  {totalItems > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                      {totalItems > 9 ? "9+" : totalItems}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href={`${base}/wishlist`}
+                  onClick={() => setMobileOpen(false)}
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-between ${pathname.startsWith(`${base}/wishlist`) ? "bg-red-50 text-red-600" : "text-gray-700 hover:bg-red-50 hover:text-red-600"}`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart className="h-4 w-4" />
+                    {t("wishlist")}
+                  </span>
+                  {wishlistIds.length > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {wishlistIds.length > 9 ? "9+" : wishlistIds.length}
+                    </span>
+                  )}
+                </Link>
                 <div className="border-t mt-3 pt-3">
                   {user ? (
                     <>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { CheckCircle, ArrowLeft } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { Button } from "@/components/ui/button";
+import { PromoCodeInput } from "@/components/checkout/PromoCodeInput";
 
 function formatMGA(amount: number) {
   return new Intl.NumberFormat("fr-MG", {
@@ -15,13 +16,12 @@ function formatMGA(amount: number) {
   }).format(amount) + " Ar";
 }
 
-const DEPOSIT_PCT = 0.3; // 30% deposit
-
 type PaymentMethod = "mvola" | "orange_money" | "bank_transfer";
 
 interface AddressForm {
   name: string;
   phone: string;
+  email: string;
   address: string;
   city: string;
 }
@@ -29,6 +29,8 @@ interface AddressForm {
 export default function CheckoutPage() {
   const t = useTranslations("checkout");
   const tPay = useTranslations("payment");
+  const tCart = useTranslations("cart");
+  const tOrder = useTranslations("order");
   const locale = useLocale();
   const router = useRouter();
   const { items, totalMGA, clear } = useCart();
@@ -36,6 +38,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState<AddressForm>({
     name: "",
     phone: "",
+    email: "",
     address: "",
     city: "Antananarivo",
   });
@@ -45,14 +48,49 @@ export default function CheckoutPage() {
   const [orderNo, setOrderNo] = useState("");
   const [depositMGA, setDepositMGA] = useState(0);
   const [errors, setErrors] = useState<Partial<AddressForm>>({});
+  const [depositPct, setDepositPct] = useState(0.3);
+  const [mvolaPhone, setMvolaPhone] = useState("");
+  const [orangeMoneyPhone, setOrangeMoneyPhone] = useState("");
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoCode, setPromoCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((s: Record<string, string>) => {
+        if (s.default_deposit_pct) setDepositPct(parseFloat(s.default_deposit_pct) / 100);
+        if (s.mvola_phone) setMvolaPhone(s.mvola_phone);
+        if (s.orange_money_phone) setOrangeMoneyPhone(s.orange_money_phone);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Auto-fill default saved address
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("madashop_addresses");
+      if (!raw) return;
+      const addrs = JSON.parse(raw) as { name: string; phone: string; address: string; city: string; isDefault: boolean }[];
+      const def = addrs.find((a) => a.isDefault) ?? addrs[0];
+      if (def) {
+        setForm((f) => ({
+          ...f,
+          name: f.name || def.name,
+          phone: f.phone || def.phone,
+          address: f.address || def.address,
+          city: f.city !== "Antananarivo" ? f.city : def.city,
+        }));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   if (items.length === 0 && !done) {
     return (
       <main className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">
-        <p className="text-gray-500">Votre panier est vide.</p>
+        <p className="text-gray-500">{t("empty_cart")}</p>
         <Link href={`/${locale}/products`}>
           <Button className="mt-4 bg-amber-500 hover:bg-amber-600 text-white">
-            Voir les produits
+            {t("view_products")}
           </Button>
         </Link>
       </main>
@@ -64,7 +102,7 @@ export default function CheckoutPage() {
       <main className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">
         <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
         <h1 className="mt-4 text-2xl font-bold text-gray-900">
-          Commande confirmée !
+          {t("order_confirmed")}
         </h1>
         {orderNo && (
           <p className="mt-2 text-sm font-mono font-semibold text-amber-700 bg-amber-50 rounded-lg px-4 py-2 inline-block">
@@ -72,26 +110,35 @@ export default function CheckoutPage() {
           </p>
         )}
         <p className="mt-3 text-gray-600">
-          Nous vous contacterons sous 24h pour confirmer le paiement.
+          {t("contact_24h")}
         </p>
         <p className="mt-1 text-sm text-gray-400">
-          Acompte requis : {formatMGA(depositMGA || Math.ceil(totalMGA * DEPOSIT_PCT))}
+          {t("deposit_required")} {formatMGA(depositMGA || Math.ceil(totalMGA * depositPct))}
         </p>
-        <Link href={`/${locale}/orders`}>
-          <Button className="mt-6 bg-amber-500 hover:bg-amber-600 text-white">
-            Voir mes commandes
-          </Button>
-        </Link>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+          {orderNo && (
+            <Link href={`/${locale}/orders/${orderNo}`}>
+              <Button className="bg-amber-500 hover:bg-amber-600 text-white">
+                {t("track_order")}
+              </Button>
+            </Link>
+          )}
+          <Link href={`/${locale}/orders`}>
+            <Button variant="outline">
+              {t("all_orders")}
+            </Button>
+          </Link>
+        </div>
       </main>
     );
   }
 
   function validate(): boolean {
     const newErrors: Partial<AddressForm> = {};
-    if (!form.name.trim()) newErrors.name = "Requis";
-    if (!form.phone.trim()) newErrors.phone = "Requis";
-    if (!form.address.trim()) newErrors.address = "Requis";
-    if (!form.city.trim()) newErrors.city = "Requis";
+    if (!form.name.trim()) newErrors.name = t("required_field");
+    if (!form.phone.trim()) newErrors.phone = t("required_field");
+    if (!form.address.trim()) newErrors.address = t("required_field");
+    if (!form.city.trim()) newErrors.city = t("required_field");
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -108,27 +155,37 @@ export default function CheckoutPage() {
           items,
           shippingAddress: form,
           paymentMethod: payment,
+          email: form.email || undefined,
+          promoCode: promoCode ?? undefined,
           locale,
         }),
       });
-      const data = await res.json() as { orderNo?: string; depositMGA?: number };
-      if (data.orderNo) setOrderNo(data.orderNo);
-      if (data.depositMGA) setDepositMGA(data.depositMGA);
+      const data = await res.json() as { orderNo?: string; orderId?: string; depositMGA?: number };
+      // Store phone so orders page can pre-fill the lookup
+      try { localStorage.setItem("madashop_last_phone", form.phone); } catch { /* ignore */ }
+      clear();
+      const params = new URLSearchParams();
+      if (data.orderNo) params.set("orderNo", data.orderNo);
+      if (data.orderId) params.set("orderId", data.orderId);
+      if (data.depositMGA) params.set("depositMGA", String(data.depositMGA));
+      params.set("paymentMethod", payment);
+      router.push(`/${locale}/checkout/success?${params.toString()}`);
+      return;
     } catch {
-      // Continue to success screen even if API fails (offline mode)
+      // Fallback: show inline done state
     }
-    // Store phone so orders page can pre-fill the lookup
     try { localStorage.setItem("madashop_last_phone", form.phone); } catch { /* ignore */ }
     clear();
     setSubmitting(false);
     setDone(true);
   }
 
-  const deposit = Math.ceil(totalMGA * DEPOSIT_PCT);
+  const discountedTotal = Math.max(0, totalMGA - promoDiscount);
+  const deposit = Math.ceil(discountedTotal * depositPct);
 
   const paymentOptions: { value: PaymentMethod; label: string; number?: string }[] = [
-    { value: "mvola", label: tPay("mvola"), number: "034 XX XX XX" },
-    { value: "orange_money", label: tPay("orange_money"), number: "032 XX XX XX" },
+    { value: "mvola", label: tPay("mvola"), number: mvolaPhone || undefined },
+    { value: "orange_money", label: tPay("orange_money"), number: orangeMoneyPhone || undefined },
     { value: "bank_transfer", label: tPay("bank_transfer") },
   ];
 
@@ -139,7 +196,7 @@ export default function CheckoutPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-amber-600 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Retour au panier
+        {t("back_to_cart")}
       </Link>
 
       <h1 className="mb-8 text-2xl font-bold text-gray-900">{t("title")}</h1>
@@ -155,10 +212,11 @@ export default function CheckoutPage() {
             <div className="space-y-4">
               {(
                 [
-                  { key: "name", label: "Nom complet", type: "text", placeholder: "Jean Rakoto" },
-                  { key: "phone", label: "Téléphone", type: "tel", placeholder: "034 XX XX XX" },
-                  { key: "address", label: "Adresse", type: "text", placeholder: "Lot II J 123, Ankorondrano" },
-                  { key: "city", label: "Ville", type: "text", placeholder: "Antananarivo" },
+                  { key: "name", label: t("field_name"), type: "text", placeholder: "Jean Rakoto" },
+                  { key: "phone", label: t("field_phone"), type: "tel", placeholder: "034 XX XX XX" },
+                  { key: "email", label: t("field_email"), type: "email", placeholder: "jean@exemple.mg" },
+                  { key: "address", label: t("field_address"), type: "text", placeholder: "Lot II J 123, Ankorondrano" },
+                  { key: "city", label: t("field_city"), type: "text", placeholder: "Antananarivo" },
                 ] as const
               ).map(({ key, label, type, placeholder }) => (
                 <div key={key}>
@@ -221,7 +279,7 @@ export default function CheckoutPage() {
               ))}
             </div>
             <p className="mt-3 text-xs text-gray-400">
-              {t("deposit_note", { pct: "30" })}
+              {t("deposit_note", { pct: Math.round(depositPct * 100).toString() })}
             </p>
           </section>
         </div>
@@ -246,21 +304,36 @@ export default function CheckoutPage() {
               ))}
             </div>
 
+            <div className="mb-4">
+              <PromoCodeInput
+                orderTotalMGA={totalMGA}
+                onApply={(discount, code) => { setPromoDiscount(discount); setPromoCode(code); }}
+                onRemove={() => { setPromoDiscount(0); setPromoCode(null); }}
+                locale={locale}
+              />
+            </div>
+
             <div className="border-t pt-3 space-y-1 text-sm">
               <div className="flex justify-between text-gray-600">
-                <span>Sous-total</span>
+                <span>{tCart("subtotal")}</span>
                 <span>{formatMGA(totalMGA)}</span>
               </div>
+              {promoDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>{promoCode}</span>
+                  <span>-{formatMGA(promoDiscount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600">
-                <span>Livraison</span>
-                <span className="text-green-600">À confirmer</span>
+                <span>{t("shipping")}</span>
+                <span className="text-green-600">{t("shipping_tbc")}</span>
               </div>
               <div className="flex justify-between font-bold text-gray-900 pt-2 border-t">
-                <span>Total</span>
-                <span className="text-amber-700">{formatMGA(totalMGA)}</span>
+                <span>{tOrder("total")}</span>
+                <span className="text-amber-700">{formatMGA(discountedTotal)}</span>
               </div>
               <div className="flex justify-between text-amber-700 font-semibold text-sm pt-1">
-                <span>Acompte (30%)</span>
+                <span>{t("deposit_label", { pct: Math.round(depositPct * 100).toString() })}</span>
                 <span>{formatMGA(deposit)}</span>
               </div>
             </div>
@@ -270,7 +343,7 @@ export default function CheckoutPage() {
               disabled={submitting}
               className="mt-5 w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold h-11 disabled:opacity-60"
             >
-              {submitting ? "Traitement…" : t("place_order")}
+              {submitting ? t("processing") : t("place_order")}
             </Button>
           </div>
         </div>

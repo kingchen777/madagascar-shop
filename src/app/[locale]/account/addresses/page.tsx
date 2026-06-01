@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { MapPin, Plus, Trash2, ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
@@ -34,6 +34,9 @@ function saveAddresses(list: Address[]) {
 const EMPTY_FORM = { name: "", phone: "", address: "", city: "Antananarivo" };
 
 export default function AddressesPage() {
+  const ta = useTranslations("account");
+  const tCommon = useTranslations("common");
+  const tCheckout = useTranslations("checkout");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -55,10 +58,10 @@ export default function AddressesPage() {
 
   function validate() {
     const e: Partial<typeof EMPTY_FORM> = {};
-    if (!form.name.trim()) e.name = "Requis";
-    if (!form.phone.trim()) e.phone = "Requis";
-    if (!form.address.trim()) e.address = "Requis";
-    if (!form.city.trim()) e.city = "Requis";
+    if (!form.name.trim()) e.name = tCheckout("required_field");
+    if (!form.phone.trim()) e.phone = tCheckout("required_field");
+    if (!form.address.trim()) e.address = tCheckout("required_field");
+    if (!form.city.trim()) e.city = tCheckout("required_field");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -102,14 +105,14 @@ export default function AddressesPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-amber-600 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Mon compte
+        {ta("back")}
       </Link>
 
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Mes adresses</h1>
+        <h1 className="text-xl font-bold text-gray-900">{ta("my_addresses")}</h1>
         {saved && (
           <span className="inline-flex items-center gap-1 text-sm text-green-600">
-            <Check className="h-4 w-4" /> Enregistré
+            <Check className="h-4 w-4" /> {ta("saved")}
           </span>
         )}
       </div>
@@ -119,7 +122,7 @@ export default function AddressesPage() {
         {addresses.length === 0 && !showForm && (
           <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center text-gray-400">
             <MapPin className="mx-auto h-8 w-8 mb-2" />
-            <p className="text-sm">Aucune adresse enregistrée</p>
+            <p className="text-sm">{ta("no_addresses")}</p>
           </div>
         )}
 
@@ -134,7 +137,7 @@ export default function AddressesPage() {
                   <p className="text-sm font-semibold text-gray-900">{a.name}</p>
                   {a.isDefault && (
                     <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      Par défaut
+                      {ta("default_badge")}
                     </span>
                   )}
                 </div>
@@ -149,7 +152,7 @@ export default function AddressesPage() {
                     onClick={() => handleSetDefault(a.id)}
                     className="text-xs text-amber-600 hover:underline"
                   >
-                    Par défaut
+                    {ta("set_default")}
                   </button>
                 )}
                 <button
@@ -168,13 +171,13 @@ export default function AddressesPage() {
       {/* Add form */}
       {showForm ? (
         <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Nouvelle adresse</h2>
+          <h2 className="text-sm font-semibold text-gray-900">{ta("new_address")}</h2>
           {(
             [
-              { key: "name", label: "Nom complet", placeholder: "Jean Rakoto" },
-              { key: "phone", label: "Téléphone", placeholder: "034 XX XX XX" },
-              { key: "address", label: "Adresse", placeholder: "Lot II J 123, Ankorondrano" },
-              { key: "city", label: "Ville", placeholder: "Antananarivo" },
+              { key: "name", label: tCheckout("field_name"), placeholder: "Jean Rakoto" },
+              { key: "phone", label: tCheckout("field_phone"), placeholder: "034 XX XX XX" },
+              { key: "address", label: tCheckout("field_address"), placeholder: "Lot II J 123, Ankorondrano" },
+              { key: "city", label: tCheckout("field_city"), placeholder: "Antananarivo" },
             ] as const
           ).map(({ key, label, placeholder }) => (
             <div key={key}>
@@ -195,13 +198,13 @@ export default function AddressesPage() {
               onClick={handleAdd}
               className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
             >
-              Enregistrer
+              {tCommon("save")}
             </button>
             <button
               onClick={() => { setShowForm(false); setErrors({}); }}
               className="rounded-xl border border-gray-300 px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              Annuler
+              {tCommon("cancel")}
             </button>
           </div>
         </div>
@@ -211,7 +214,7 @@ export default function AddressesPage() {
           className="inline-flex items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-5 py-3 text-sm font-medium text-gray-500 hover:border-amber-400 hover:text-amber-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Ajouter une adresse
+          {ta("add_address")}
         </button>
       )}
     </main>

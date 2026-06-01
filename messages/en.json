@@ -8,7 +8,8 @@
     "account": "My Account",
     "login": "Login",
     "logout": "Logout",
-    "admin": "Admin"
+    "admin": "Admin",
+    "wishlist": "Wishlist"
   },
   "home": {
     "hero_title": "Your China Sourcing Partner in Madagascar",
@@ -23,7 +24,16 @@
     "step3_title": "We Buy for You",
     "step3_desc": "Our team purchases your product in China and ships it to Madagascar",
     "step4_title": "Pick Up or Get Delivered",
-    "step4_desc": "Pay the balance and collect your order — or choose local delivery"
+    "step4_desc": "Pay the balance and collect your order — or choose local delivery",
+    "trust_payment": "Secure payment",
+    "trust_delivery": "Delivery across Madagascar",
+    "trust_tracking": "Real-time tracking",
+    "how_subtitle": "Simple, transparent and stress-free",
+    "platforms_label": "Supported platforms",
+    "cta_title": "Ready to order from China?",
+    "cta_subtitle": "Submit your product link and get a quote within 24h.",
+    "featured_title": "Popular products",
+    "featured_link": "View all products"
   },
   "product": {
     "add_to_cart": "Add to Cart",
@@ -38,7 +48,14 @@
     "source": "Source",
     "auto_translated": "Auto-translated",
     "weight": "Weight",
-    "sku": "SKU"
+    "sku": "SKU",
+    "back_to_products": "Back to products",
+    "agent_lead_time": "Item ordered from China. Estimated delivery: 3–5 weeks after confirmation and deposit payment.",
+    "all_title": "All Products",
+    "count_available": "{count} products available",
+    "search_placeholder": "Search products…",
+    "no_products": "No products found",
+    "all_filter": "All"
   },
   "cart": {
     "title": "My Cart",
@@ -47,7 +64,10 @@
     "subtotal": "Subtotal",
     "checkout": "Checkout",
     "continue_shopping": "Continue Shopping",
-    "remove": "Remove"
+    "remove": "Remove",
+    "clear_all": "Clear all",
+    "total": "Total",
+    "shipping_note": "Shipping calculated at checkout"
   },
   "checkout": {
     "title": "Checkout",
@@ -55,7 +75,32 @@
     "payment_method": "Payment Method",
     "order_summary": "Order Summary",
     "place_order": "Place Order",
-    "deposit_note": "A {pct}% deposit is required to confirm this order."
+    "deposit_note": "A {pct}% deposit is required to confirm this order.",
+    "back_to_cart": "Back to cart",
+    "empty_cart": "Your cart is empty.",
+    "view_products": "View products",
+    "order_confirmed": "Order confirmed!",
+    "contact_24h": "We will contact you within 24h to confirm payment.",
+    "deposit_required": "Deposit required:",
+    "track_order": "Track my order →",
+    "all_orders": "All my orders",
+    "required_field": "Required",
+    "processing": "Processing…",
+    "field_name": "Full name",
+    "field_phone": "Phone",
+    "field_email": "Email (optional)",
+    "field_address": "Address",
+    "field_city": "City",
+    "shipping": "Delivery",
+    "shipping_tbc": "To confirm",
+    "deposit_label": "Deposit ({pct}%)",
+    "success_title": "Order placed!",
+    "success_subtitle": "Your order has been registered. We will contact you within 24h.",
+    "order_number": "Order number",
+    "payment_method_label": "Payment method",
+    "next_steps_title": "Next steps",
+    "next_steps_body": "Make your deposit via the chosen payment method, then send a screenshot to our team to confirm your order.",
+    "continue_shopping": "Continue shopping"
   },
   "order": {
     "title": "My Orders",
@@ -74,7 +119,25 @@
     "total_amount": "Total",
     "pay_deposit": "Pay Deposit",
     "pay_balance": "Pay Balance",
-    "upload_proof": "Upload Payment Proof"
+    "upload_proof": "Upload Payment Proof",
+    "tracking_title": "Order Tracking",
+    "phone_placeholder": "Your phone number",
+    "search": "Search",
+    "no_orders": "No orders found for this number.",
+    "enter_phone": "Enter the phone number used when placing your order.",
+    "more_items": "+{count} item(s)",
+    "error_search": "Error while searching.",
+    "error_server": "Could not reach the server.",
+    "type_agent": "Agent Order",
+    "type_self": "Direct Purchase",
+    "placed_on": "Placed on",
+    "tracking_section": "Order tracking",
+    "items_section": "Items ordered",
+    "fees_section": "Fee breakdown",
+    "cancelled_msg": "This order has been cancelled.",
+    "refunded_msg": "This order has been refunded.",
+    "payment_send": "Send the amount via MVola{mvola}, Orange Money{orange} or bank transfer, then share the proof with our team. Your order will be confirmed within 24h.",
+    "ref_label": "Ref:"
   },
   "status": {
     "DRAFT": "Draft",
@@ -111,6 +174,38 @@
     "forgot_password": "Forgot password?",
     "no_account": "Don't have an account?",
     "already_account": "Already have an account?"
+  },
+  "footer": {
+    "tagline": "Your trusted partner for sourcing products from China to Madagascar.",
+    "nav_heading": "Navigation",
+    "services_heading": "Services",
+    "contact_heading": "Contact",
+    "rights": "All rights reserved.",
+    "legal": "Legal Notice",
+    "privacy": "Privacy"
+  },
+  "agent": {
+    "form_heading": "Your Request",
+    "how_it_works_heading": "How it works",
+    "deposit_refundable": "Deposit refunded if item unavailable",
+    "quote_24h": "Quote sent within 24 business hours",
+    "tracking": "Real-time order tracking"
+  },
+  "account": {
+    "my_orders_desc": "Track your ongoing orders",
+    "my_addresses": "My addresses",
+    "my_addresses_desc": "Manage your delivery addresses",
+    "back": "My account",
+    "saved": "Saved",
+    "no_addresses": "No addresses saved",
+    "default_badge": "Default",
+    "set_default": "Set as default",
+    "new_address": "New address",
+    "add_address": "Add an address",
+    "login_title": "Welcome back!",
+    "login_sub": "Log in to track your orders",
+    "register_title": "Create an account",
+    "register_sub": "Join MadaShop and order from China"
   },
   "common": {
     "loading": "Loading...",

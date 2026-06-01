@@ -46,6 +46,7 @@ interface CreateOrderBody {
   paymentMethod: string;
   email?: string;
   locale?: string;
+  promoCode?: string;
 }
 
 function generateOrderNo(): string {
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { items, shippingAddress, paymentMethod, email } = body as CreateOrderBody;
+  const { items, shippingAddress, paymentMethod, email, promoCode } = body as CreateOrderBody;
 
   if (!items?.length || !shippingAddress || !paymentMethod) {
     return NextResponse.json(
@@ -71,8 +72,49 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const totalMGA = items.reduce((s, i) => s + i.priceMGA * i.qty, 0);
-  const depositMGA = Math.ceil(totalMGA * 0.3);
+  const subtotalMGA = items.reduce((s, i) => s + i.priceMGA * i.qty, 0);
+
+  // Validate and apply promo code (graceful fallback if table doesn't exist yet)
+  let discountMGA = 0;
+  let appliedPromoCode: string | null = null;
+  if (promoCode) {
+    const { data: promo } = await supabase
+      .from("PromoCode")
+      .select("id, code, type, value, minOrderMGA, maxUses, usedCount, expiresAt, active")
+      .eq("code", promoCode.toUpperCase())
+      .eq("active", true)
+      .single();
+
+    if (
+      promo &&
+      (!promo.expiresAt || new Date(promo.expiresAt) >= new Date()) &&
+      (promo.maxUses == null || promo.usedCount < promo.maxUses) &&
+      (promo.minOrderMGA == null || subtotalMGA >= Number(promo.minOrderMGA))
+    ) {
+      discountMGA = promo.type === "PERCENT"
+        ? Math.round((subtotalMGA * Number(promo.value)) / 100)
+        : Math.min(Math.round(Number(promo.value)), subtotalMGA);
+      appliedPromoCode = promo.code as string;
+      // Increment usage count (silent fail if table not migrated yet)
+      supabase
+        .from("PromoCode")
+        .update({ usedCount: (promo.usedCount as number) + 1 })
+        .eq("id", promo.id)
+        .then(() => {}).then(undefined, () => {});
+    }
+  }
+
+  const totalMGA = Math.max(0, subtotalMGA - discountMGA);
+
+  // Read deposit percentage from settings (fallback: 30%)
+  const { data: depositSetting } = await supabase
+    .from("Setting")
+    .select("value")
+    .eq("key", "default_deposit_pct")
+    .single();
+  const depositPct = depositSetting ? parseFloat(depositSetting.value) / 100 : 0.3;
+  const depositMGA = Math.ceil(totalMGA * depositPct);
+
   const orderNo = generateOrderNo();
   const orderId = randomUUID();
   const now = new Date().toISOString();
@@ -118,6 +160,7 @@ export async function POST(req: NextRequest) {
     customsFee: "0",
     miscFee: "0",
     currency: "MGA",
+    ...(appliedPromoCode ? { promoCode: appliedPromoCode, discountMGA } : {}),
     shippingInfo: {
       name: shippingAddress.name,
       phone: shippingAddress.phone,
@@ -155,5 +198,5 @@ export async function POST(req: NextRequest) {
     }).catch(() => {});
   }
 
-  return NextResponse.json({ orderId, orderNo, status: "DEPOSIT_PENDING", totalMGA, depositMGA });
+  return NextResponse.json({ orderId, orderNo, status: "DEPOSIT_PENDING", totalMGA, depositMGA, discountMGA, appliedPromoCode });
 }

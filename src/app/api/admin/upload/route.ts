@@ -8,7 +8,12 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "avif"];
 
 export async function POST(req: NextRequest) {
-  const formData = await req.formData();
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json({ error: "Expected multipart/form-data" }, { status: 400 });
+  }
   const file = formData.get("file") as File | null;
 
   if (!file) {
