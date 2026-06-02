@@ -1,37 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { MapPin, Plus, Trash2, ArrowLeft, Check } from "lucide-react";
+import { MapPin, Plus, Trash2, ArrowLeft, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/useAuth";
 
 interface Address {
   id: string;
-  name: string;
+  fullName: string;
   phone: string;
-  address: string;
-  city: string;
+  region: string;
+  line1: string;
+  note: string | null;
   isDefault: boolean;
 }
 
-const STORAGE_KEY = "madashop_addresses";
-
-function loadAddresses(): Address[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Address[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAddresses(list: Address[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-const EMPTY_FORM = { name: "", phone: "", address: "", city: "Antananarivo" };
+const EMPTY_FORM = { fullName: "", phone: "", region: "Antananarivo", line1: "", note: "" };
 
 export default function AddressesPage() {
   const ta = useTranslations("account");
@@ -39,63 +25,78 @@ export default function AddressesPage() {
   const tCheckout = useTranslations("checkout");
   const locale = useLocale();
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<typeof EMPTY_FORM>>({});
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace(`/${locale}/account/login`);
-  }, [user, loading, locale, router]);
+    if (!authLoading && !user) router.replace(`/${locale}/account/login`);
+  }, [user, authLoading, locale, router]);
 
-  useEffect(() => {
-    setAddresses(loadAddresses());
+  const fetchAddresses = useCallback(async () => {
+    setFetching(true);
+    try {
+      const res = await fetch("/api/user/addresses");
+      if (res.ok) {
+        const data = await res.json() as { addresses: Address[] };
+        setAddresses(data.addresses);
+      }
+    } finally {
+      setFetching(false);
+    }
   }, []);
 
-  if (loading || !user) return null;
+  useEffect(() => {
+    if (user) fetchAddresses();
+  }, [user, fetchAddresses]);
+
+  if (authLoading || !user) return null;
 
   function validate() {
     const e: Partial<typeof EMPTY_FORM> = {};
-    if (!form.name.trim()) e.name = tCheckout("required_field");
+    if (!form.fullName.trim()) e.fullName = tCheckout("required_field");
     if (!form.phone.trim()) e.phone = tCheckout("required_field");
-    if (!form.address.trim()) e.address = tCheckout("required_field");
-    if (!form.city.trim()) e.city = tCheckout("required_field");
+    if (!form.region.trim()) e.region = tCheckout("required_field");
+    if (!form.line1.trim()) e.line1 = tCheckout("required_field");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!validate()) return;
-    const next: Address = {
-      id: `addr-${Date.now()}`,
-      ...form,
-      isDefault: addresses.length === 0,
-    };
-    const updated = [...addresses, next];
-    setAddresses(updated);
-    saveAddresses(updated);
-    setForm(EMPTY_FORM);
-    setShowForm(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  function handleDelete(id: string) {
-    const updated = addresses.filter((a) => a.id !== id);
-    // If we deleted the default, make first remaining the default
-    if (updated.length > 0 && !updated.some((a) => a.isDefault)) {
-      updated[0] = { ...updated[0], isDefault: true };
+    setSaving(true);
+    try {
+      const res = await fetch("/api/user/addresses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setForm(EMPTY_FORM);
+        setShowForm(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+        await fetchAddresses();
+      }
+    } finally {
+      setSaving(false);
     }
-    setAddresses(updated);
-    saveAddresses(updated);
   }
 
-  function handleSetDefault(id: string) {
-    const updated = addresses.map((a) => ({ ...a, isDefault: a.id === id }));
-    setAddresses(updated);
-    saveAddresses(updated);
+  async function handleDelete(id: string) {
+    await fetch(`/api/user/addresses/${id}`, { method: "DELETE" });
+    await fetchAddresses();
+  }
+
+  async function handleSetDefault(id: string) {
+    await fetch(`/api/user/addresses/${id}`, { method: "PATCH" });
+    await fetchAddresses();
   }
 
   return (
@@ -117,68 +118,71 @@ export default function AddressesPage() {
         )}
       </div>
 
-      {/* Address list */}
       <div className="space-y-3 mb-4">
-        {addresses.length === 0 && !showForm && (
+        {fetching ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+          </div>
+        ) : addresses.length === 0 && !showForm ? (
           <div className="rounded-xl border border-dashed border-gray-300 py-10 text-center text-gray-400">
             <MapPin className="mx-auto h-8 w-8 mb-2" />
             <p className="text-sm">{ta("no_addresses")}</p>
           </div>
-        )}
-
-        {addresses.map((a) => (
-          <div
-            key={a.id}
-            className={`rounded-xl border p-4 ${a.isDefault ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"}`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">{a.name}</p>
-                  {a.isDefault && (
-                    <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      {ta("default_badge")}
-                    </span>
-                  )}
+        ) : (
+          addresses.map((a) => (
+            <div
+              key={a.id}
+              className={`rounded-xl border p-4 ${a.isDefault ? "border-amber-300 bg-amber-50" : "border-gray-200 bg-white"}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-900">{a.fullName}</p>
+                    {a.isDefault && (
+                      <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-medium text-amber-800">
+                        {ta("default_badge")}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-0.5">{a.phone}</p>
+                  <p className="text-sm text-gray-600">{a.line1}</p>
+                  <p className="text-sm text-gray-600">{a.region}, Madagascar</p>
+                  {a.note && <p className="text-xs text-gray-400 mt-0.5">{a.note}</p>}
                 </div>
-                <p className="text-sm text-gray-600 mt-0.5">{a.phone}</p>
-                <p className="text-sm text-gray-600">{a.address}</p>
-                <p className="text-sm text-gray-600">{a.city}, Madagascar</p>
-              </div>
-
-              <div className="flex gap-2">
-                {!a.isDefault && (
+                <div className="flex gap-2 items-center">
+                  {!a.isDefault && (
+                    <button
+                      onClick={() => handleSetDefault(a.id)}
+                      className="text-xs text-amber-600 hover:underline"
+                    >
+                      {ta("set_default")}
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleSetDefault(a.id)}
-                    className="text-xs text-amber-600 hover:underline"
+                    onClick={() => handleDelete(a.id)}
+                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    aria-label="Supprimer"
                   >
-                    {ta("set_default")}
+                    <Trash2 className="h-4 w-4" />
                   </button>
-                )}
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
-                  aria-label="Supprimer"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
-      {/* Add form */}
       {showForm ? (
         <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
           <h2 className="text-sm font-semibold text-gray-900">{ta("new_address")}</h2>
           {(
             [
-              { key: "name", label: tCheckout("field_name"), placeholder: "Jean Rakoto" },
-              { key: "phone", label: tCheckout("field_phone"), placeholder: "034 XX XX XX" },
-              { key: "address", label: tCheckout("field_address"), placeholder: "Lot II J 123, Ankorondrano" },
-              { key: "city", label: tCheckout("field_city"), placeholder: "Antananarivo" },
-            ] as const
+              { key: "fullName" as const, label: tCheckout("field_name"), placeholder: "Jean Rakoto" },
+              { key: "phone" as const, label: tCheckout("field_phone"), placeholder: "034 XX XX XX" },
+              { key: "line1" as const, label: tCheckout("field_address"), placeholder: "Lot II J 123, Ankorondrano" },
+              { key: "region" as const, label: tCheckout("field_city"), placeholder: "Antananarivo" },
+              { key: "note" as const, label: "Note (optionnel)", placeholder: "Ex: Porte bleue" },
+            ]
           ).map(({ key, label, placeholder }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -192,12 +196,13 @@ export default function AddressesPage() {
               {errors[key] && <p className="mt-1 text-xs text-red-500">{errors[key]}</p>}
             </div>
           ))}
-
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
-              className="rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
             >
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {tCommon("save")}
             </button>
             <button
