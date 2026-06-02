@@ -5,6 +5,7 @@ import { supabase } from "@/lib/db";
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
 import { AdminOrderNotes } from "@/components/admin/AdminOrderNotes";
 import { AdminOrderFinances } from "@/components/admin/AdminOrderFinances";
+import { AdminPaymentActions } from "@/components/admin/AdminPaymentActions";
 
 function formatMGA(n: string | number) {
   return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
@@ -46,6 +47,13 @@ export default async function AdminOrderDetailPage({ params }: Props) {
     .single();
 
   if (!order) notFound();
+
+  const { data: paymentsData } = await supabase
+    .from("Payment")
+    .select("id, kind, provider, amount, currency, status, providerRef, proofUrl, createdAt")
+    .eq("orderId", order.id)
+    .order("createdAt", { ascending: false });
+  const payments = paymentsData ?? [];
 
   const userRaw = order.user as { id: string; name: string; phone: string; email: string | null }[] | { id: string; name: string; phone: string; email: string | null } | null;
   const user = Array.isArray(userRaw) ? (userRaw[0] ?? null) : userRaw;
@@ -112,6 +120,19 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                 </div>
               ))}
             </div>
+          </section>
+
+          {/* Payments */}
+          <section className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Paiements</h2>
+              {payments.some((p) => p.status === "PENDING") && (
+                <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-white">
+                  {payments.filter((p) => p.status === "PENDING").length} en attente
+                </span>
+              )}
+            </div>
+            <AdminPaymentActions payments={payments} />
           </section>
 
           {/* Internal notes */}

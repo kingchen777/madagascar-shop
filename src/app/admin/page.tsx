@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingBag, Package, TrendingUp, Clock, ChevronRight } from "lucide-react";
+import { ShoppingBag, Package, TrendingUp, Clock, ChevronRight, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/db";
 
 function formatMGA(n: string | number) {
@@ -26,11 +26,20 @@ const STATUS_FR: Record<string, string> = {
 };
 
 export default async function AdminDashboard() {
-  const { data: ordersData } = await supabase
-    .from("Order")
-    .select("id, orderNo, status, totalAmount, depositAmount, createdAt, user:User(name)")
-    .order("createdAt", { ascending: false });
+  const [{ data: ordersData }, { data: pendingPaymentsData }] = await Promise.all([
+    supabase
+      .from("Order")
+      .select("id, orderNo, status, totalAmount, depositAmount, createdAt, user:User(name)")
+      .order("createdAt", { ascending: false }),
+    supabase
+      .from("Payment")
+      .select("id, kind, amount, orderId, createdAt, order:Order(orderNo)")
+      .eq("status", "PENDING")
+      .order("createdAt", { ascending: false })
+      .limit(5),
+  ]);
   const orders = ordersData ?? [];
+  const pendingPayments = pendingPaymentsData ?? [];
 
   const { data: productsData } = await supabase
     .from("Product")
@@ -65,9 +74,9 @@ export default async function AdminDashboard() {
       color: "bg-amber-50 text-amber-600",
     },
     {
-      label: "Paiements en attente",
-      value: pending,
-      icon: TrendingUp,
+      label: "Paiements à confirmer",
+      value: pendingPayments.length,
+      icon: CreditCard,
       color: "bg-red-50 text-red-600",
     },
     {
@@ -129,6 +138,46 @@ export default async function AdminDashboard() {
             )}
           </ul>
         </div>
+
+        {/* Pending payments */}
+        {pendingPayments.length > 0 && (
+          <div className="rounded-xl border border-yellow-200 bg-white lg:col-span-2">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-yellow-100 bg-yellow-50 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-yellow-600" />
+                <h2 className="text-sm font-semibold text-yellow-900">Paiements en attente de confirmation</h2>
+              </div>
+              <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-white">
+                {pendingPayments.length}
+              </span>
+            </div>
+            <ul className="divide-y divide-gray-100">
+              {pendingPayments.map((p) => {
+                const orderRaw = p.order as { orderNo?: string } | { orderNo?: string }[] | null;
+                const orderNo = Array.isArray(orderRaw) ? (orderRaw[0]?.orderNo ?? "—") : (orderRaw?.orderNo ?? "—");
+                return (
+                  <li key={p.id}>
+                    <Link
+                      href={`/admin/orders/${p.orderId}`}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-amber-50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{orderNo}</p>
+                        <p className="text-xs text-gray-500">
+                          {p.kind === "DEPOSIT" ? "Acompte" : p.kind === "BALANCE" ? "Solde" : "Paiement complet"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-amber-700">{formatMGA(p.amount)}</p>
+                        <ChevronRight className="h-4 w-4 text-gray-300 ml-auto mt-0.5" />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {/* Products overview */}
         <div className="rounded-xl border border-gray-200 bg-white">
