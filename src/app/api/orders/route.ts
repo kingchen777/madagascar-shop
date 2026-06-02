@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email";
 import { randomUUID } from "crypto";
+import { getServerUser } from "@/lib/auth/supabase-server";
 
 export async function GET(req: NextRequest) {
   const phone = req.nextUrl.searchParams.get("phone");
@@ -125,29 +126,82 @@ export async function POST(req: NextRequest) {
   const orderId = randomUUID();
   const now = new Date().toISOString();
 
-  // Find or create guest user
+  // Find or create user — prefer Auth email lookup so /api/user/orders can bridge back
   let userId: string;
-  const { data: existingUser } = await supabase
-    .from("User")
-    .select("id")
-    .eq("phone", shippingAddress.phone)
-    .single();
+  const authUser = await getServerUser();
+  const resolvedEmail = authUser?.email ?? email ?? null;
 
-  if (existingUser) {
-    userId = existingUser.id;
+  // 1. Try by Auth email (most reliable for logged-in users)
+  if (resolvedEmail) {
+    const { data: byEmail } = await supabase
+      .from("User")
+      .select("id, email")
+      .eq("email", resolvedEmail)
+      .single();
+    if (byEmail) {
+      userId = byEmail.id;
+      // Backfill phone if missing
+      if (shippingAddress.phone) {
+        await supabase
+          .from("User")
+          .update({ phone: shippingAddress.phone, updatedAt: now })
+          .eq("id", byEmail.id)
+          .is("phone", null);
+      }
+    } else {
+      // 2. Try by phone — backfill email so future lookups work
+      const { data: byPhone } = await supabase
+        .from("User")
+        .select("id, email")
+        .eq("phone", shippingAddress.phone)
+        .single();
+      if (byPhone) {
+        userId = byPhone.id;
+        if (!byPhone.email && resolvedEmail) {
+          await supabase
+            .from("User")
+            .update({ email: resolvedEmail, updatedAt: now })
+            .eq("id", byPhone.id);
+        }
+      } else {
+        // 3. Create new user
+        const newUserId = randomUUID();
+        await supabase.from("User").insert({
+          id: newUserId,
+          phone: shippingAddress.phone,
+          email: resolvedEmail,
+          name: shippingAddress.name,
+          role: "CUSTOMER",
+          locale: (body as CreateOrderBody).locale ?? "fr",
+          createdAt: now,
+          updatedAt: now,
+        });
+        userId = newUserId;
+      }
+    }
   } else {
-    const newUserId = randomUUID();
-    await supabase.from("User").insert({
-      id: newUserId,
-      phone: shippingAddress.phone,
-      email: email ?? null,
-      name: shippingAddress.name,
-      role: "CUSTOMER",
-      locale: (body as CreateOrderBody).locale ?? "fr",
-      createdAt: now,
-      updatedAt: now,
-    });
-    userId = newUserId;
+    // No email at all — fall back to phone-only lookup/create
+    const { data: byPhone } = await supabase
+      .from("User")
+      .select("id")
+      .eq("phone", shippingAddress.phone)
+      .single();
+    if (byPhone) {
+      userId = byPhone.id;
+    } else {
+      const newUserId = randomUUID();
+      await supabase.from("User").insert({
+        id: newUserId,
+        phone: shippingAddress.phone,
+        email: null,
+        name: shippingAddress.name,
+        role: "CUSTOMER",
+        locale: (body as CreateOrderBody).locale ?? "fr",
+        createdAt: now,
+        updatedAt: now,
+      });
+      userId = newUserId;
+    }
   }
 
   // Create order
