@@ -21,6 +21,7 @@ model User {
   orders    Order[]
   addresses Address[]
   reviews   Review[]
+  wishlists Wishlist[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -91,6 +92,7 @@ model Product {
   translations  ProductTranslation[]
   orderItems    OrderItem[]
   reviews       Review[]
+  wishlists     Wishlist[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 }
@@ -294,4 +296,19 @@ model PromoCode {
 enum PromoType {
   PERCENT
   FIXED
+}
+
+// ─────────────────────────────────────────────
+// Wishlist
+// ─────────────────────────────────────────────
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
 }
