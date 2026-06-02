@@ -95,12 +95,18 @@ export async function POST(req: NextRequest) {
         ? Math.round((subtotalMGA * Number(promo.value)) / 100)
         : Math.min(Math.round(Number(promo.value)), subtotalMGA);
       appliedPromoCode = promo.code as string;
-      // Increment usage count (silent fail if table not migrated yet)
-      supabase
+      // Atomic increment: only update if usedCount hasn't changed since we read it.
+      // If two requests race, exactly one will match the .eq("usedCount", ...) condition.
+      const { data: updated } = await supabase
         .from("PromoCode")
         .update({ usedCount: (promo.usedCount as number) + 1 })
         .eq("id", promo.id)
-        .then(() => {}).then(undefined, () => {});
+        .eq("usedCount", promo.usedCount as number)
+        .select("id");
+      // If 0 rows updated, someone else used the last slot — reject if at limit
+      if ((!updated || updated.length === 0) && promo.maxUses != null) {
+        return NextResponse.json({ error: "Code promo épuisé" }, { status: 410 });
+      }
     }
   }
 

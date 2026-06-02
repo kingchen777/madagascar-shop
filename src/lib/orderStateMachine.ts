@@ -21,7 +21,7 @@ const AGENT_TRANSITIONS: Transition[] = [
   { from: "ARRIVED_MG", to: ["READY_FOR_PICKUP"] },
   { from: "READY_FOR_PICKUP", to: ["COMPLETED"] },
   { from: "COMPLETED", to: [] },
-  { from: "CANCELLED", to: [] },
+  { from: "CANCELLED", to: ["REFUNDED"] },
   { from: "REFUNDED", to: [] },
 ];
 
@@ -32,7 +32,7 @@ const SELF_TRANSITIONS: Transition[] = [
   { from: "DEPOSIT_PAID", to: ["READY_FOR_PICKUP", "REFUNDED"] },
   { from: "READY_FOR_PICKUP", to: ["COMPLETED"] },
   { from: "COMPLETED", to: [] },
-  { from: "CANCELLED", to: [] },
+  { from: "CANCELLED", to: ["REFUNDED"] },
   { from: "REFUNDED", to: [] },
 ];
 

@@ -1,31 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/db";
 import { sendStatusUpdate } from "@/lib/email";
-
-type OrderStatus =
-  | "DRAFT" | "QUOTED" | "DEPOSIT_PENDING" | "DEPOSIT_PAID"
-  | "PROCURING" | "PURCHASED" | "AT_CN_WAREHOUSE"
-  | "BALANCE_PENDING" | "BALANCE_PAID" | "INTL_SHIPPING"
-  | "ARRIVED_MG" | "READY_FOR_PICKUP" | "COMPLETED"
-  | "CANCELLED" | "REFUNDED";
-
-const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  DRAFT: ["QUOTED", "DEPOSIT_PENDING", "CANCELLED"],
-  QUOTED: ["DEPOSIT_PENDING", "CANCELLED"],
-  DEPOSIT_PENDING: ["DEPOSIT_PAID", "CANCELLED"],
-  DEPOSIT_PAID: ["PROCURING"],
-  PROCURING: ["PURCHASED", "CANCELLED"],
-  PURCHASED: ["AT_CN_WAREHOUSE"],
-  AT_CN_WAREHOUSE: ["BALANCE_PENDING"],
-  BALANCE_PENDING: ["BALANCE_PAID"],
-  BALANCE_PAID: ["INTL_SHIPPING"],
-  INTL_SHIPPING: ["ARRIVED_MG"],
-  ARRIVED_MG: ["READY_FOR_PICKUP"],
-  READY_FOR_PICKUP: ["COMPLETED"],
-  COMPLETED: [],
-  CANCELLED: ["REFUNDED"],
-  REFUNDED: [],
-};
+import { isTransitionAllowed } from "@/lib/orderStateMachine";
 
 export async function GET(
   _req: NextRequest,
@@ -66,7 +42,7 @@ export async function PATCH(
 
   const { data: order, error: fetchErr } = await supabase
     .from("Order")
-    .select("id, orderNo, status, totalAmount, depositAmount, user:User(name, email)")
+    .select("id, orderNo, status, type, totalAmount, depositAmount, user:User(name, email)")
     .or(`id.eq.${id},orderNo.eq.${id}`)
     .single();
 
@@ -75,8 +51,7 @@ export async function PATCH(
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
 
   if (status) {
-    const allowed = VALID_TRANSITIONS[order.status as OrderStatus] ?? [];
-    if (!allowed.includes(status as OrderStatus)) {
+    if (!isTransitionAllowed(order.type as "SELF" | "AGENT", order.status as Parameters<typeof isTransitionAllowed>[1], status as Parameters<typeof isTransitionAllowed>[2])) {
       return NextResponse.json(
         { error: `Cannot transition from ${order.status} to ${status}` },
         { status: 422 }
