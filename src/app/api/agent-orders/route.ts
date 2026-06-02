@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/db";
 import { randomUUID } from "crypto";
+import { getServerUser } from "@/lib/auth/supabase-server";
 
 interface AgentInquiryBody {
   url: string;
@@ -36,27 +37,48 @@ export async function POST(req: NextRequest) {
   const inquiryId = randomUUID();
   const now = new Date().toISOString();
 
-  // Find or create user by contact (phone)
+  // Find or create user — prefer Auth email so /api/user/orders can bridge back
   let userId: string;
-  const { data: existingUser } = await supabase
-    .from("User")
-    .select("id")
-    .eq("phone", contact)
-    .single();
+  const authUser = await getServerUser();
+  const resolvedEmail = authUser?.email ?? null;
 
-  if (existingUser) {
-    userId = existingUser.id;
+  if (resolvedEmail) {
+    const { data: byEmail } = await supabase
+      .from("User").select("id").eq("email", resolvedEmail).single();
+    if (byEmail) {
+      userId = byEmail.id;
+      await supabase.from("User").update({ phone: contact, updatedAt: now })
+        .eq("id", byEmail.id).is("phone", null);
+    } else {
+      const { data: byPhone } = await supabase
+        .from("User").select("id, email").eq("phone", contact).single();
+      if (byPhone) {
+        userId = byPhone.id;
+        if (!byPhone.email) {
+          await supabase.from("User").update({ email: resolvedEmail, updatedAt: now }).eq("id", byPhone.id);
+        }
+      } else {
+        const newUserId = randomUUID();
+        await supabase.from("User").insert({
+          id: newUserId, phone: contact, email: resolvedEmail,
+          role: "CUSTOMER", locale: locale ?? "fr", createdAt: now, updatedAt: now,
+        });
+        userId = newUserId;
+      }
+    }
   } else {
-    const newUserId = randomUUID();
-    await supabase.from("User").insert({
-      id: newUserId,
-      phone: contact,
-      role: "CUSTOMER",
-      locale: locale ?? "fr",
-      createdAt: now,
-      updatedAt: now,
-    });
-    userId = newUserId;
+    const { data: byPhone } = await supabase
+      .from("User").select("id").eq("phone", contact).single();
+    if (byPhone) {
+      userId = byPhone.id;
+    } else {
+      const newUserId = randomUUID();
+      await supabase.from("User").insert({
+        id: newUserId, phone: contact, email: null,
+        role: "CUSTOMER", locale: locale ?? "fr", createdAt: now, updatedAt: now,
+      });
+      userId = newUserId;
+    }
   }
 
   // Create AGENT order in DRAFT status
