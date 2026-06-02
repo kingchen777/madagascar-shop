@@ -137,7 +137,15 @@
     "cancelled_msg": "This order has been cancelled.",
     "refunded_msg": "This order has been refunded.",
     "payment_send": "Send the amount via MVola{mvola}, Orange Money{orange} or bank transfer, then share the proof with our team. Your order will be confirmed within 24h.",
-    "ref_label": "Ref:"
+    "ref_label": "Ref:",
+    "submit_payment": "Confirm Payment",
+    "provider_ref": "Transaction reference (optional)",
+    "provider_ref_placeholder": "e.g. TXN123456",
+    "submitting": "Submitting...",
+    "payment_submitted": "Payment submitted! Our team will verify within 24h.",
+    "choose_provider": "Payment method",
+    "confirm_sent": "I have sent the payment",
+    "payment_error": "Error submitting. Please try again."
   },
   "status": {
     "DRAFT": "Draft",

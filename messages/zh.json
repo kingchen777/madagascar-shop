@@ -137,7 +137,15 @@
     "cancelled_msg": "此订单已取消。",
     "refunded_msg": "此订单已退款。",
     "payment_send": "请通过MVola{mvola}、Orange Money{orange}或银行转账付款，然后将凭证发送给我们的团队。您的订单将在24小时内确认。",
-    "ref_label": "单号："
+    "ref_label": "单号：",
+    "submit_payment": "确认付款",
+    "provider_ref": "转账流水号（可选）",
+    "provider_ref_placeholder": "例如：TXN123456",
+    "submitting": "提交中...",
+    "payment_submitted": "付款已提交！我们的团队将在24小时内确认。",
+    "choose_provider": "付款方式",
+    "confirm_sent": "我已完成付款",
+    "payment_error": "提交失败，请重试。"
   },
   "status": {
     "DRAFT": "草稿",

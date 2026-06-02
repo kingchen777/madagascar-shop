@@ -137,7 +137,15 @@
     "cancelled_msg": "Cette commande a été annulée.",
     "refunded_msg": "Cette commande a été remboursée.",
     "payment_send": "Envoyez le montant via MVola{mvola}, Orange Money{orange} ou virement bancaire, puis partagez le justificatif à notre équipe. Votre commande sera confirmée sous 24h.",
-    "ref_label": "Réf :"
+    "ref_label": "Réf :",
+    "submit_payment": "Confirmer le paiement",
+    "provider_ref": "Référence de transaction (optionnel)",
+    "provider_ref_placeholder": "Ex: TXN123456",
+    "submitting": "Envoi en cours...",
+    "payment_submitted": "Paiement soumis ! Notre équipe va vérifier sous 24h.",
+    "choose_provider": "Méthode de paiement",
+    "confirm_sent": "J'ai effectué le paiement",
+    "payment_error": "Erreur lors de la soumission. Réessayez."
   },
   "status": {
     "DRAFT": "Brouillon",

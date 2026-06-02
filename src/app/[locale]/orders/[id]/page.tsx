@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeft, CheckCircle, Circle, Clock } from "lucide-react";
 import { supabase } from "@/lib/db";
+import PaymentSubmitForm from "@/components/PaymentSubmitForm";
 
 const SELF_STEPS = [
   "DRAFT",
@@ -252,7 +253,7 @@ export default async function OrderDetailPage({ params }: Props) {
               />
             </div>
 
-            {/* Payment instructions */}
+            {/* Payment instructions + form */}
             {(order.status === "DEPOSIT_PENDING" || order.status === "BALANCE_PENDING") && (
               <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2 text-sm">
                 <p className="font-semibold text-amber-800">
@@ -266,7 +267,14 @@ export default async function OrderDetailPage({ params }: Props) {
                     orange: orangeMoneyPhone ? ` (${orangeMoneyPhone})` : "",
                   })}
                 </p>
-                <p className="text-xs text-amber-600 font-mono">{t("ref_label")} {order.orderNo}</p>
+                <PaymentSubmitForm
+                  orderId={order.id}
+                  orderNo={order.orderNo}
+                  kind={order.status === "DEPOSIT_PENDING" ? "DEPOSIT" : "BALANCE"}
+                  amount={order.status === "DEPOSIT_PENDING" ? depositAmount : balanceDue}
+                  mvolaPhone={mvolaPhone}
+                  orangeMoneyPhone={orangeMoneyPhone}
+                />
               </div>
             )}
           </div>
