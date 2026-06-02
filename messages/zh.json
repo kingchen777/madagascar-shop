@@ -197,7 +197,22 @@
     "how_it_works_heading": "代购流程",
     "deposit_refundable": "商品无货时退还押金",
     "quote_24h": "24工作小时内发送报价",
-    "tracking": "实时订单追踪"
+    "tracking": "实时订单追踪",
+    "form_url": "商品链接（淘宝、1688、拼多多等）",
+    "form_url_placeholder": "https://item.taobao.com/item.htm?id=...",
+    "form_name": "商品名称（选填）",
+    "form_name_placeholder": "例如：蓝色夏季连衣裙 M码",
+    "form_spec": "规格（颜色、尺码等）",
+    "form_spec_placeholder": "例如：红色，L码",
+    "form_qty": "数量",
+    "form_notes": "备注",
+    "form_notes_placeholder": "其他需要说明的信息...",
+    "form_contact": "您的手机号 / WhatsApp",
+    "form_contact_placeholder": "+261 XX XXX XXXX",
+    "form_submit": "提交询价",
+    "form_submitting": "提交中...",
+    "form_success": "询价已提交！我们将在24小时内联系您。",
+    "form_error": "提交失败，请重试。"
   },
   "account": {
     "my_orders_desc": "追踪您的进行中订单",

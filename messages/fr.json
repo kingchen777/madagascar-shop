@@ -213,7 +213,22 @@
     "how_it_works_heading": "Comment ça marche",
     "deposit_refundable": "Acompte remboursé si produit indisponible",
     "quote_24h": "Devis envoyé sous 24h ouvrées",
-    "tracking": "Suivi de commande en temps réel"
+    "tracking": "Suivi de commande en temps réel",
+    "form_url": "Lien du produit (Taobao, 1688, Pinduoduo...)",
+    "form_url_placeholder": "https://item.taobao.com/item.htm?id=...",
+    "form_name": "Nom du produit (facultatif)",
+    "form_name_placeholder": "Ex: Robe d'été bleue taille M",
+    "form_spec": "Spécifications (couleur, taille...)",
+    "form_spec_placeholder": "Ex: Couleur rouge, taille L",
+    "form_qty": "Quantité",
+    "form_notes": "Notes supplémentaires",
+    "form_notes_placeholder": "Toute information utile pour votre commande...",
+    "form_contact": "Votre téléphone / WhatsApp",
+    "form_contact_placeholder": "+261 XX XXX XXXX",
+    "form_submit": "Envoyer ma demande",
+    "form_submitting": "Envoi en cours...",
+    "form_success": "Demande envoyée ! Nous vous contactons sous 24h.",
+    "form_error": "Erreur lors de l'envoi. Réessayez."
   },
   "common": {
     "loading": "Chargement...",

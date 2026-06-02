@@ -112,7 +112,7 @@ export default async function AgentPage({ params, searchParams }: PageProps) {
             <h2 className="text-lg font-bold text-gray-900 mb-5">
               {ta("form_heading")}
             </h2>
-            <AgentOrderForm locale={loc} prefillUrl={prefillUrl} />
+            <AgentOrderForm prefillUrl={prefillUrl} locale={loc} />
           </div>
         </div>
 

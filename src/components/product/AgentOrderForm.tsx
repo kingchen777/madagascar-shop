@@ -3,78 +3,15 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Send, Loader2, Link as LinkIcon } from "lucide-react";
-import type { Locale as MockLocale } from "@/components/product/ProductCard";
+import { useTranslations } from "next-intl";
 
 interface Props {
-  locale: MockLocale;
   prefillUrl?: string;
+  locale?: string;
 }
 
-const LABELS: Record<MockLocale, {
-  url: string; urlPlaceholder: string;
-  name: string; namePlaceholder: string;
-  spec: string; specPlaceholder: string;
-  qty: string;
-  notes: string; notesPlaceholder: string;
-  contact: string; contactPlaceholder: string;
-  submit: string; submitting: string;
-  success: string; error: string;
-}> = {
-  fr: {
-    url: "Lien du produit (Taobao, 1688, Pinduoduo...)",
-    urlPlaceholder: "https://item.taobao.com/item.htm?id=...",
-    name: "Nom du produit (facultatif)",
-    namePlaceholder: "Ex: Robe d'été bleue taille M",
-    spec: "Spécifications (couleur, taille...)",
-    specPlaceholder: "Ex: Couleur rouge, taille L",
-    qty: "Quantité",
-    notes: "Notes supplémentaires",
-    notesPlaceholder: "Toute information utile pour votre commande...",
-    contact: "Votre téléphone / WhatsApp",
-    contactPlaceholder: "+261 XX XXX XXXX",
-    submit: "Envoyer ma demande",
-    submitting: "Envoi en cours...",
-    success: "Demande envoyée ! Nous vous contactons sous 24h.",
-    error: "Erreur lors de l'envoi. Réessayez.",
-  },
-  en: {
-    url: "Product link (Taobao, 1688, Pinduoduo...)",
-    urlPlaceholder: "https://item.taobao.com/item.htm?id=...",
-    name: "Product name (optional)",
-    namePlaceholder: "e.g. Blue summer dress size M",
-    spec: "Specifications (color, size...)",
-    specPlaceholder: "e.g. Red color, size L",
-    qty: "Quantity",
-    notes: "Additional notes",
-    notesPlaceholder: "Any useful information for your order...",
-    contact: "Your phone / WhatsApp",
-    contactPlaceholder: "+261 XX XXX XXXX",
-    submit: "Send my request",
-    submitting: "Sending...",
-    success: "Request sent! We will contact you within 24h.",
-    error: "Error sending. Please try again.",
-  },
-  zh: {
-    url: "商品链接（淘宝、1688、拼多多等）",
-    urlPlaceholder: "https://item.taobao.com/item.htm?id=...",
-    name: "商品名称（选填）",
-    namePlaceholder: "例如：蓝色夏季连衣裙 M码",
-    spec: "规格（颜色、尺码等）",
-    specPlaceholder: "例如：红色，L码",
-    qty: "数量",
-    notes: "备注",
-    notesPlaceholder: "其他需要说明的信息...",
-    contact: "您的手机号 / WhatsApp",
-    contactPlaceholder: "+261 XX XXX XXXX",
-    submit: "提交询价",
-    submitting: "提交中...",
-    success: "询价已提交！我们将在24小时内联系您。",
-    error: "提交失败，请重试。",
-  },
-};
-
-export function AgentOrderForm({ locale, prefillUrl }: Props) {
-  const L = LABELS[locale];
+export function AgentOrderForm({ prefillUrl, locale }: Props) {
+  const t = useTranslations("agent");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     url: prefillUrl ?? "",
@@ -101,11 +38,11 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
         body: JSON.stringify({ ...form, qty: Number(form.qty), locale }),
       });
       const data = await res.json() as { inquiryNo?: string };
-      const msg = data.inquiryNo ? `${L.success} (${data.inquiryNo})` : L.success;
+      const msg = data.inquiryNo ? `${t("form_success")} (${data.inquiryNo})` : t("form_success");
       toast.success(msg, { duration: 6000 });
       setForm({ url: "", name: "", spec: "", qty: "1", notes: "", contact: "" });
     } catch {
-      toast.error(L.error);
+      toast.error(t("form_error"));
     } finally {
       setLoading(false);
     }
@@ -119,7 +56,7 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
       {/* URL */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-          {L.url} <span className="text-red-500">*</span>
+          {t("form_url")} <span className="text-red-500">*</span>
         </label>
         <div className="relative">
           <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -128,7 +65,7 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
             required
             value={form.url}
             onChange={(e) => update("url", e.target.value)}
-            placeholder={L.urlPlaceholder}
+            placeholder={t("form_url_placeholder")}
             className={inputClass + " pl-10"}
           />
         </div>
@@ -137,13 +74,13 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
       {/* Name */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-          {L.name}
+          {t("form_name")}
         </label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => update("name", e.target.value)}
-          placeholder={L.namePlaceholder}
+          placeholder={t("form_name_placeholder")}
           className={inputClass}
         />
       </div>
@@ -152,19 +89,19 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
       <div className="grid grid-cols-3 gap-3">
         <div className="col-span-2">
           <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-            {L.spec}
+            {t("form_spec")}
           </label>
           <input
             type="text"
             value={form.spec}
             onChange={(e) => update("spec", e.target.value)}
-            placeholder={L.specPlaceholder}
+            placeholder={t("form_spec_placeholder")}
             className={inputClass}
           />
         </div>
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-            {L.qty}
+            {t("form_qty")}
           </label>
           <input
             type="number"
@@ -180,14 +117,14 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
       {/* Contact */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-          {L.contact} <span className="text-red-500">*</span>
+          {t("form_contact")} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           required
           value={form.contact}
           onChange={(e) => update("contact", e.target.value)}
-          placeholder={L.contactPlaceholder}
+          placeholder={t("form_contact_placeholder")}
           className={inputClass}
         />
       </div>
@@ -195,13 +132,13 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
       {/* Notes */}
       <div>
         <label className="mb-1.5 block text-xs font-semibold text-gray-700">
-          {L.notes}
+          {t("form_notes")}
         </label>
         <textarea
           rows={3}
           value={form.notes}
           onChange={(e) => update("notes", e.target.value)}
-          placeholder={L.notesPlaceholder}
+          placeholder={t("form_notes_placeholder")}
           className={inputClass + " resize-none"}
         />
       </div>
@@ -215,12 +152,12 @@ export function AgentOrderForm({ locale, prefillUrl }: Props) {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            {L.submitting}
+            {t("form_submitting")}
           </>
         ) : (
           <>
             <Send className="h-4 w-4" />
-            {L.submit}
+            {t("form_submit")}
           </>
         )}
       </button>

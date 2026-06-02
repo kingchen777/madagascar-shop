@@ -197,7 +197,22 @@
     "how_it_works_heading": "How it works",
     "deposit_refundable": "Deposit refunded if item unavailable",
     "quote_24h": "Quote sent within 24 business hours",
-    "tracking": "Real-time order tracking"
+    "tracking": "Real-time order tracking",
+    "form_url": "Product link (Taobao, 1688, Pinduoduo...)",
+    "form_url_placeholder": "https://item.taobao.com/item.htm?id=...",
+    "form_name": "Product name (optional)",
+    "form_name_placeholder": "e.g. Blue summer dress size M",
+    "form_spec": "Specifications (color, size...)",
+    "form_spec_placeholder": "e.g. Red color, size L",
+    "form_qty": "Quantity",
+    "form_notes": "Additional notes",
+    "form_notes_placeholder": "Any useful information for your order...",
+    "form_contact": "Your phone / WhatsApp",
+    "form_contact_placeholder": "+261 XX XXX XXXX",
+    "form_submit": "Send my request",
+    "form_submitting": "Sending...",
+    "form_success": "Request sent! We will contact you within 24h.",
+    "form_error": "Error sending. Please try again."
   },
   "account": {
     "my_orders_desc": "Track your ongoing orders",
