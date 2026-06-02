@@ -82,14 +82,14 @@ export default async function HomePage({ params }: HomePageProps) {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
             <Link
-              href="./products"
+              href={`/${locale}/products`}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-amber-500 px-8 text-white font-semibold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-200"
             >
               {t("shop_now")}
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="./agent"
+              href={`/${locale}/agent`}
               className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-amber-400 px-8 text-amber-700 font-semibold hover:bg-amber-50 transition-colors"
             >
               {t("agent_order")}
