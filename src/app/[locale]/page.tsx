@@ -118,12 +118,17 @@ export default async function HomePage({ params }: HomePageProps) {
               {navT("featured")}
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              href={`/${locale}/agent`}
-              className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/30 px-8 font-semibold text-white hover:bg-white/10 transition-all backdrop-blur-sm"
-            >
-              {t("agent_order")}
-            </Link>
+            <div className="flex flex-col items-center gap-1">
+              <Link
+                href={`/${locale}/agent`}
+                className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/30 px-8 font-semibold text-white hover:bg-white/10 transition-all backdrop-blur-sm"
+              >
+                {t("agent_order")}
+              </Link>
+              <span className="text-xs opacity-70" style={{ color: "#FFE8A0" }}>
+                {t("agent_order_hint")}
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
