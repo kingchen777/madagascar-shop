@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { ArrowRight, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { type Locale, type DBProduct } from "@/components/product/ProductCard";
 import { supabase } from "@/lib/db";
 
@@ -163,48 +163,6 @@ export default async function FeaturedPage({ params, searchParams }: PageProps) 
 
   return (
     <div className="min-h-screen" style={{ background: "#f5f5f5" }}>
-
-      {/* ── 1688-style Top Search Bar ─────────────────────────── */}
-      <div style={{ background: "#fff", borderBottom: "2px solid #E8420F" }}>
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
-          {/* Logo / Title */}
-          <Link href={`/${locale}`} className="flex items-center gap-1.5 shrink-0">
-            <div className="h-8 w-8 rounded flex items-center justify-center text-white font-black text-sm"
-              style={{ background: "#E8420F" }}>精</div>
-            <span className="font-bold text-base hidden sm:block" style={{ color: "#E8420F" }}>
-              {loc === "zh" ? "代购精选" : loc === "fr" ? "Sélection" : "Curated Picks"}
-            </span>
-          </Link>
-
-          {/* Search bar */}
-          <div className="flex-1 flex max-w-2xl">
-            <input
-              type="text"
-              placeholder={L.search_placeholder}
-              readOnly
-              className="flex-1 border border-r-0 px-4 py-2 text-sm outline-none rounded-l-sm"
-              style={{ borderColor: "#E8420F" }}
-            />
-            <button
-              className="px-5 py-2 text-white text-sm font-medium rounded-r-sm flex items-center gap-1"
-              style={{ background: "#E8420F" }}
-            >
-              <Search className="h-4 w-4" />
-              {loc === "zh" ? "搜索" : loc === "fr" ? "Rechercher" : "Search"}
-            </button>
-          </div>
-
-          {/* Agent link */}
-          <Link
-            href={`/${locale}/agent`}
-            className="hidden md:inline-flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded border"
-            style={{ color: "#E8420F", borderColor: "#E8420F" }}
-          >
-            <ArrowRight className="h-3.5 w-3.5" />
-            {navT("agent")}
-          </Link>
-        </div>
-      </div>
 
       {/* ── Breadcrumb ────────────────────────────────────────── */}
       <div className="mx-auto max-w-7xl px-4 py-2 text-xs text-gray-400 flex items-center gap-1">
