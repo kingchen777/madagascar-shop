@@ -2,14 +2,15 @@
   "nav": {
     "home": "Accueil",
     "products": "Produits",
-    "agent": "Commande depuis Chine",
+    "agent": "Commander depuis la Chine",
     "cart": "Panier",
     "orders": "Mes commandes",
     "account": "Mon compte",
     "login": "Connexion",
     "logout": "Déconnexion",
     "admin": "Administration",
-    "wishlist": "Mes favoris"
+    "wishlist": "Mes favoris",
+    "featured": "Sélection Daigou"
   },
   "home": {
     "hero_title": "Votre partenaire d'achat en Chine",
@@ -248,5 +249,17 @@
     "submit": "Soumettre",
     "currency_mga": "Ar",
     "currency_cny": "¥"
+  },
+  "featured": {
+    "badge": "Sélection Premium",
+    "title": "Daigou Sélection",
+    "subtitle": "Une sélection de produits chinois soigneusement vérifiés par notre équipe, livrés directement à Madagascar",
+    "empty_title": "Bientôt disponible",
+    "empty_desc": "Notre équipe prépare une sélection de qualité. En attendant, soumettez une demande personnalisée.",
+    "grid_title": "Produits sélectionnés",
+    "grid_count": "{count} articles disponibles",
+    "custom_order": "Commande personnalisée →",
+    "cta_title": "Vous ne trouvez pas ce que vous cherchez ?",
+    "cta_desc": "Collez un lien Taobao / 1688 / Pinduoduo et nous gérons l'achat pour vous"
   }
 }

@@ -2,7 +2,8 @@
   "nav": {
     "home": "首页",
     "products": "商品",
-    "agent": "中国代购",
+    "featured": "代购精选",
+    "agent": "中国商品网站代购",
     "cart": "购物车",
     "orders": "我的订单",
     "account": "我的账户",
@@ -248,5 +249,17 @@
     "submit": "提交",
     "currency_mga": "Ar",
     "currency_cny": "¥"
+  },
+  "featured": {
+    "badge": "精品推荐",
+    "title": "代购精选",
+    "subtitle": "由我们团队精心挑选的中国优质商品，已验证品质，下单即可直运马达加斯加",
+    "empty_title": "精选商品即将上线",
+    "empty_desc": "我们正在为您精心挑选优质商品，也可直接提交代购需求",
+    "grid_title": "精选商品",
+    "grid_count": "共 {count} 件商品",
+    "custom_order": "找不到？提交自定义需求",
+    "cta_title": "找不到想要的商品？",
+    "cta_desc": "粘贴任意淘宝 / 1688 / 拼多多链接，我们帮您代购"
   }
 }

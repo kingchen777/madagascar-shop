@@ -2,14 +2,15 @@
   "nav": {
     "home": "Home",
     "products": "Products",
-    "agent": "Order from China",
+    "agent": "Order from Chinese Sites",
     "cart": "Cart",
     "orders": "My Orders",
     "account": "My Account",
     "login": "Login",
     "logout": "Logout",
     "admin": "Admin",
-    "wishlist": "Wishlist"
+    "wishlist": "Wishlist",
+    "featured": "Curated Picks"
   },
   "home": {
     "hero_title": "Your China Sourcing Partner in Madagascar",
@@ -248,5 +249,17 @@
     "submit": "Submit",
     "currency_mga": "Ar",
     "currency_cny": "¥"
+  },
+  "featured": {
+    "badge": "Premium Selection",
+    "title": "Curated Picks",
+    "subtitle": "Hand-picked products from China, quality verified by our team, shipped directly to Madagascar",
+    "empty_title": "Coming Soon",
+    "empty_desc": "Our team is curating a quality selection. Meanwhile, submit a custom order request.",
+    "grid_title": "Selected Products",
+    "grid_count": "{count} items available",
+    "custom_order": "Can't find it? Submit custom request →",
+    "cta_title": "Can't find what you need?",
+    "cta_desc": "Paste any Taobao / 1688 / Pinduoduo link and we handle the purchase for you"
   }
 }

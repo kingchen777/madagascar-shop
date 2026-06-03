@@ -69,6 +69,7 @@ export async function Footer({ locale }: FooterProps) {
               {[
                 { href: base, label: t("home") },
                 { href: `${base}/products`, label: t("products") },
+                { href: `${base}/featured`, label: t("featured") },
                 { href: `${base}/agent`, label: t("agent") },
                 { href: `${base}/orders`, label: t("orders") },
               ].map((link) => (
