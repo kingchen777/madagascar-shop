@@ -167,16 +167,8 @@ export default async function HomePage({ params }: HomePageProps) {
             {["淘宝 Taobao", "天猫 Tmall", "1688", "拼多多 Pinduoduo", "京东 JD.com"].map((platform) => (
               <span
                 key={platform}
-                className="rounded-xl border px-5 py-2.5 text-sm font-medium text-gray-600 transition-all hover:-translate-y-0.5 cursor-default"
+                className="rounded-xl border px-5 py-2.5 text-sm font-medium text-gray-600 transition-all hover:-translate-y-0.5 hover:border-[#C42B1C] hover:text-[#C42B1C] cursor-default"
                 style={{ borderColor: "#F0D0D0", background: "#FFF9F9" }}
-                onMouseEnter={e => {
-                  (e.target as HTMLElement).style.borderColor = "#C42B1C";
-                  (e.target as HTMLElement).style.color = "#C42B1C";
-                }}
-                onMouseLeave={e => {
-                  (e.target as HTMLElement).style.borderColor = "#F0D0D0";
-                  (e.target as HTMLElement).style.color = "#4B5563";
-                }}
               >
                 {platform}
               </span>
