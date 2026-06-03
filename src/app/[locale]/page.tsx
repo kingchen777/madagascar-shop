@@ -111,6 +111,14 @@ export default async function HomePage({ params }: HomePageProps) {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
+              href={`/${locale}/featured`}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 font-semibold text-white transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
+              style={{ background: "linear-gradient(135deg, #C42B1C, #A81C1C)", boxShadow: "0 4px 20px rgba(168,28,28,0.4)", border: "2px solid rgba(232,164,0,0.5)" }}
+            >
+              {navT("featured")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
               href={`/${locale}/agent`}
               className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/30 px-8 font-semibold text-white hover:bg-white/10 transition-all backdrop-blur-sm"
             >
