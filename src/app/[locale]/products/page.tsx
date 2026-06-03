@@ -133,10 +133,10 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
       </div>
 
       {/* Top-level category filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Link
           href={`/${locale}/products`}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`whitespace-nowrap shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             !category ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
           }`}
         >
@@ -148,7 +148,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
             <Link
               key={cat.slug}
               href={`/${locale}/products?category=${cat.slug}`}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-amber-500 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700"
@@ -162,10 +162,10 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
 
       {/* Subcategory navigation (only shown when a category with children is active) */}
       {subcategories.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6 pl-2 border-l-4 border-amber-400">
+        <div className="flex gap-2 mb-6 pl-2 border-l-4 border-amber-400 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Link
             href={`/${locale}/products?category=${activeCat!.slug}`}
-            className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap shrink-0 rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
               !isSubcategory
                 ? "bg-amber-100 text-amber-800 border border-amber-300"
                 : "text-gray-500 hover:text-amber-700 hover:bg-amber-50"
@@ -177,7 +177,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
             <Link
               key={sub.slug}
               href={`/${locale}/products?category=${sub.slug}`}
-              className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap shrink-0 rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
                 category === sub.slug
                   ? "bg-amber-100 text-amber-800 border border-amber-300"
                   : "text-gray-500 hover:text-amber-700 hover:bg-amber-50"
