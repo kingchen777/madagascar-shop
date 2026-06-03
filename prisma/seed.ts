@@ -104,6 +104,34 @@ async function main() {
     },
   });
 
+  // ── Electronics subcategories ───────────────────────────────────────────
+  const elecSubs = [
+    { slug: "electronics-phone",       sort: 1, fr: "Téléphones",        en: "Mobile Phones",      zh: "手机" },
+    { slug: "electronics-audio",       sort: 2, fr: "Audio & Son",        en: "Audio & Speakers",   zh: "音响" },
+    { slug: "electronics-accessories", sort: 3, fr: "Accessoires Mobile", en: "Mobile Accessories", zh: "手机周边" },
+    { slug: "electronics-appliances",  sort: 4, fr: "Petit Électroménager",en: "Small Appliances",  zh: "小家电" },
+    { slug: "electronics-tv",          sort: 5, fr: "Télévision",         en: "Television",         zh: "电视" },
+  ];
+
+  for (const sub of elecSubs) {
+    await prisma.category.upsert({
+      where: { slug: sub.slug },
+      update: {},
+      create: {
+        slug: sub.slug,
+        sort: sub.sort,
+        parentId: electronics.id,
+        translations: {
+          create: [
+            { locale: "fr", name: sub.fr },
+            { locale: "en", name: sub.en },
+            { locale: "zh", name: sub.zh },
+          ],
+        },
+      },
+    });
+  }
+
   console.log("✓ Categories seeded");
 
   // ── Sample products ──────────────────────────────────────────────────────
