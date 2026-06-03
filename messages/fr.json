@@ -260,6 +260,10 @@
     "grid_count": "{count} articles disponibles",
     "custom_order": "Commande personnalisée →",
     "cta_title": "Vous ne trouvez pas ce que vous cherchez ?",
-    "cta_desc": "Collez un lien Taobao / 1688 / Pinduoduo et nous gérons l'achat pour vous"
+    "cta_desc": "Collez un lien Taobao / 1688 / Pinduoduo et nous gérons l'achat pour vous",
+    "banner": "Sélection soignée, qualité garantie, livraison directe à Madagascar",
+    "filter_label": "Catégorie :",
+    "all": "Tout",
+    "order_btn": "Commander"
   }
 }

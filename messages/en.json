@@ -260,6 +260,10 @@
     "grid_count": "{count} items available",
     "custom_order": "Can't find it? Submit custom request →",
     "cta_title": "Can't find what you need?",
-    "cta_desc": "Paste any Taobao / 1688 / Pinduoduo link and we handle the purchase for you"
+    "cta_desc": "Paste any Taobao / 1688 / Pinduoduo link and we handle the purchase for you",
+    "banner": "Curated selection, quality guaranteed, shipped direct to Madagascar",
+    "filter_label": "Category:",
+    "all": "All",
+    "order_btn": "Order"
   }
 }
