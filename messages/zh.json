@@ -1,7 +1,7 @@
 {
   "nav": {
     "home": "首页",
-    "products": "商品",
+    "products": "本地商城",
     "featured": "代购精选",
     "agent": "中国商品网站代购",
     "cart": "购物车",
@@ -53,7 +53,7 @@
     "sku": "货号",
     "back_to_products": "返回商品列表",
     "agent_lead_time": "此商品从中国代购，预计3–5周送达（确认订单并支付押金后起算）。",
-    "all_title": "全部商品",
+    "all_title": "本地商城",
     "count_available": "{count} 件商品",
     "search_placeholder": "搜索商品…",
     "no_products": "未找到商品",
