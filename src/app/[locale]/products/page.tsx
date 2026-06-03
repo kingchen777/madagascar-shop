@@ -34,6 +34,7 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
       category:Category(slug, categoryTranslations:CategoryTranslation(locale, name))
     `)
     .eq("status", "ACTIVE")
+    .eq("type", "SELF")
     .order("createdAt", { ascending: false });
 
   const allProducts = (productsData ?? []) as unknown as DBProduct[];
