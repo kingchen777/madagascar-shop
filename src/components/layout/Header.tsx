@@ -62,7 +62,7 @@ export function Header() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const fullHref = `${base}${link.href}`;
               const isActive = pathname === link.href;
@@ -89,7 +89,7 @@ export function Header() {
           <div className="flex items-center gap-1">
             <LanguageSwitcher />
 
-            <Link href={`${base}/wishlist`} className="hidden sm:block">
+            <Link href={`${base}/wishlist`} className="hidden md:block">
               <Button variant="ghost" size="icon" className="relative hover:bg-red-50">
                 <Heart className={`h-5 w-5 transition-colors ${wishlistIds.length > 0 ? "fill-red-600 text-red-600" : "text-gray-500"}`} />
                 {wishlistIds.length > 0 && (
@@ -115,7 +115,7 @@ export function Header() {
 
             {!loading && (
               user ? (
-                <div className="hidden sm:flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1">
                   <Link href={`${base}/account`}>
                     <Button variant="ghost" size="sm" className="gap-1.5 text-sm text-gray-600 hover:bg-red-50 hover:text-red-700">
                       <User className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function Header() {
                   </Button>
                 </div>
               ) : (
-                <Link href={`${base}/account/login`} className="hidden sm:block">
+                <Link href={`${base}/account/login`} className="hidden md:block">
                   <Button size="sm" className="text-sm text-white rounded-lg"
                     style={{ background: "linear-gradient(135deg, #A81C1C, #6B0000)" }}>
                     {t("login")}
@@ -144,7 +144,7 @@ export function Header() {
             {/* Mobile menu */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger
-                className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-red-50 transition-colors"
+                className="lg:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-red-50 transition-colors"
                 aria-label="Menu"
               >
                 {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
