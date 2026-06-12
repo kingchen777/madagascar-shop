@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.alicdn.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "cdn.jsdelivr.net" },
+      { protocol: "https", hostname: "**.appmifile.com" },
+      { protocol: "https", hostname: "**.mi.com" },
+      { protocol: "https", hostname: "**.xiaomi.com" },
     ],
   },
 };

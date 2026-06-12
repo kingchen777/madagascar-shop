@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ShoppingBag, Package, TrendingUp, Clock, ChevronRight, CreditCard } from "lucide-react";
 import { supabase } from "@/lib/db";
+import { getAdminLang } from "@/lib/getAdminLang";
+import { getT } from "@/lib/adminI18n";
 
 function formatMGA(n: string | number) {
   return new Intl.NumberFormat("fr-MG", { maximumFractionDigits: 0 }).format(Number(n)) + " Ar";
@@ -14,18 +16,11 @@ const STATUS_BADGE: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-600",
 };
 
-const STATUS_FR: Record<string, string> = {
-  DRAFT: "Brouillon",
-  QUOTED: "Devis envoyé",
-  DEPOSIT_PENDING: "Acompte en attente",
-  DEPOSIT_PAID: "Acompte payé",
-  PROCURING: "Achat en cours",
-  INTL_SHIPPING: "En transit",
-  COMPLETED: "Terminé",
-  CANCELLED: "Annulé",
-};
-
 export default async function AdminDashboard() {
+  const lang = await getAdminLang();
+  const t = getT(lang);
+  const td = t.dashboard;
+
   const [{ data: ordersData }, { data: pendingPaymentsData }] = await Promise.all([
     supabase
       .from("Order")
@@ -61,37 +56,21 @@ export default async function AdminDashboard() {
   ).length;
 
   const stats = [
-    {
-      label: "Commandes totales",
-      value: orders.length,
-      icon: ShoppingBag,
-      color: "bg-blue-50 text-blue-600",
-    },
-    {
-      label: "En cours",
-      value: active,
-      icon: Clock,
-      color: "bg-amber-50 text-amber-600",
-    },
-    {
-      label: "Paiements à confirmer",
-      value: pendingPayments.length,
-      icon: CreditCard,
-      color: "bg-red-50 text-red-600",
-    },
-    {
-      label: "Acomptes encaissés",
-      value: formatMGA(totalDeposit),
-      icon: TrendingUp,
-      color: "bg-green-50 text-green-600",
-    },
+    { label: td.totalOrders, value: orders.length, icon: ShoppingBag, color: "bg-blue-50 text-blue-600" },
+    { label: td.inProgress, value: active, icon: Clock, color: "bg-amber-50 text-amber-600" },
+    { label: td.pendingPayments, value: pending, icon: CreditCard, color: "bg-red-50 text-red-600" },
+    { label: td.depositsCollected, value: formatMGA(totalDeposit), icon: TrendingUp, color: "bg-green-50 text-green-600" },
   ];
+
+  const kindLabel: Record<string, string> = {
+    DEPOSIT: td.deposit,
+    BALANCE: td.balance,
+  };
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Tableau de bord</h1>
+      <h1 className="text-xl font-bold text-gray-900">{td.title}</h1>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-gray-200 bg-white p-4">
@@ -108,9 +87,9 @@ export default async function AdminDashboard() {
         {/* Recent orders */}
         <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Dernières commandes</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{td.recentOrders}</h2>
             <Link href="/admin/orders" className="text-xs text-amber-600 hover:underline flex items-center gap-0.5">
-              Voir tout <ChevronRight className="h-3 w-3" />
+              {td.viewAll} <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
           <ul className="divide-y divide-gray-100">
@@ -126,7 +105,7 @@ export default async function AdminDashboard() {
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[o.status] ?? "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_FR[o.status] ?? o.status}
+                      {t.orders.status[o.status as keyof typeof t.orders.status] ?? o.status}
                     </span>
                     <p className="mt-0.5 text-xs text-gray-500">{formatMGA(o.totalAmount)}</p>
                   </div>
@@ -134,7 +113,7 @@ export default async function AdminDashboard() {
               </li>
             ))}
             {orders.length === 0 && (
-              <li className="px-5 py-6 text-center text-sm text-gray-400">Aucune commande</li>
+              <li className="px-5 py-6 text-center text-sm text-gray-400">{td.noOrders}</li>
             )}
           </ul>
         </div>
@@ -145,7 +124,7 @@ export default async function AdminDashboard() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-yellow-100 bg-yellow-50 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-yellow-600" />
-                <h2 className="text-sm font-semibold text-yellow-900">Paiements en attente de confirmation</h2>
+                <h2 className="text-sm font-semibold text-yellow-900">{td.pendingConfirmation}</h2>
               </div>
               <span className="rounded-full bg-yellow-400 px-2 py-0.5 text-xs font-bold text-white">
                 {pendingPayments.length}
@@ -164,7 +143,7 @@ export default async function AdminDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900">{orderNo}</p>
                         <p className="text-xs text-gray-500">
-                          {p.kind === "DEPOSIT" ? "Acompte" : p.kind === "BALANCE" ? "Solde" : "Paiement complet"}
+                          {kindLabel[p.kind] ?? td.fullPayment}
                         </p>
                       </div>
                       <div className="text-right">
@@ -182,27 +161,27 @@ export default async function AdminDashboard() {
         {/* Products overview */}
         <div className="rounded-xl border border-gray-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900">Produits ({productCount ?? 0})</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t.nav.products} ({productCount ?? 0})</h2>
             <Link href="/admin/products" className="text-xs text-amber-600 hover:underline flex items-center gap-0.5">
-              Gérer <ChevronRight className="h-3 w-3" />
+              {td.manage} <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
           <ul className="divide-y divide-gray-100">
             {products.map((p) => {
               const trans = (p.translations as { locale: string; name: string }[] | null) ?? [];
-              const nameFr = trans.find((t) => t.locale === "fr")?.name ?? p.slug;
+              const name = trans.find((x) => x.locale === lang)?.name
+                ?? trans.find((x) => x.locale === "fr")?.name
+                ?? p.slug;
               return (
                 <li key={p.id} className="flex items-center gap-3 px-5 py-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{nameFr}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
                     <p className="text-xs text-gray-500">
-                      {p.type === "AGENT" ? "Agent" : "Direct"}
+                      {p.type === "AGENT" ? td.agent : td.direct}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-amber-700">
-                      {formatMGA(p.priceMGA)}
-                    </p>
+                    <p className="text-sm font-semibold text-amber-700">{formatMGA(p.priceMGA)}</p>
                     {p.stock != null && (
                       <p className={`text-xs ${p.stock < 5 ? "text-red-500" : "text-gray-400"}`}>
                         Stock: {p.stock}
@@ -215,7 +194,7 @@ export default async function AdminDashboard() {
             {products.length === 0 && (
               <li className="px-5 py-6 text-center text-sm text-gray-400">
                 <Package className="mx-auto h-8 w-8 text-gray-200 mb-2" />
-                Aucun produit
+                {td.noProducts}
               </li>
             )}
           </ul>

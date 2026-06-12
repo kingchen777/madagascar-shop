@@ -189,6 +189,35 @@ export default async function ProductsPage({ params, searchParams }: PageProps) 
         </div>
       )}
 
+      {/* ── Xiaomi Zone Banner ─────────────────────────── */}
+      <Link
+        href={`/${locale}/phones/xiaomi`}
+        className="group mb-8 flex items-center justify-between gap-4 rounded-2xl overflow-hidden px-6 py-4 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+        style={{ background: "linear-gradient(135deg, #B34400 0%, #FF6900 60%, #FF8C42 100%)" }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-md">
+            <span className="text-xl font-black tracking-tighter" style={{ color: "#FF6900", fontFamily: "system-ui, sans-serif" }}>Mi</span>
+          </div>
+          <div>
+            <p className="text-base font-bold text-white leading-tight">
+              {loc === "zh" ? "小米专区" : loc === "fr" ? "Zone Xiaomi" : "Xiaomi Zone"}
+            </p>
+            <p className="text-xs text-orange-100 mt-0.5">
+              {loc === "zh" ? "小米 / 红米 / POCO — 直供马达加斯加"
+                : loc === "fr" ? "Xiaomi · Redmi · POCO — Livraison directe à Madagascar"
+                : "Xiaomi · Redmi · POCO — Direct to Madagascar"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 text-white text-sm font-semibold shrink-0">
+          <span className="hidden sm:inline">
+            {loc === "zh" ? "查看全部" : loc === "fr" ? "Voir tout" : "View all"}
+          </span>
+          <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </div>
+      </Link>
+
       <ProductsGrid
         products={filtered}
         locale={loc}

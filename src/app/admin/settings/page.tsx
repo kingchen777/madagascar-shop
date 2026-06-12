@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
+import { useAdminLang } from "@/components/admin/AdminLangContext";
 
 interface Settings {
   exchange_rate_cny_mga: string;
@@ -26,6 +27,9 @@ const DEFAULTS: Settings = {
 };
 
 export default function AdminSettingsPage() {
+  const { t } = useAdminLang();
+  const ts = t.settings;
+
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,9 +39,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetch("/api/admin/settings")
       .then((r) => r.json())
-      .then((data: Partial<Settings>) => {
-        setSettings((prev) => ({ ...prev, ...data }));
-      })
+      .then((data: Partial<Settings>) => { setSettings((prev) => ({ ...prev, ...data })); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -53,11 +55,11 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(settings),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok) { setError(data.error ?? "Erreur lors de la sauvegarde"); return; }
+      if (!res.ok) { setError(data.error ?? t.error); return; }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setError("Impossible de contacter le serveur.");
+      setError(t.error);
     } finally {
       setSaving(false);
     }
@@ -68,22 +70,22 @@ export default function AdminSettingsPage() {
   return (
     <div className="p-6 max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Paramètres</h1>
+        <h1 className="text-xl font-bold text-gray-900">{ts.title}</h1>
         {saved && (
           <span className="inline-flex items-center gap-1 text-sm text-green-600">
-            <Check className="h-4 w-4" /> Enregistré
+            <Check className="h-4 w-4" /> {t.saved}
           </span>
         )}
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-gray-400 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" /> Chargement…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t.loading}
         </div>
       ) : (
         <div className="space-y-4">
           <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Taux de change</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">{ts.sections.exchangeRate}</h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600 whitespace-nowrap">1 CNY =</span>
               <input
@@ -95,15 +97,15 @@ export default function AdminSettingsPage() {
               />
               <span className="text-sm text-gray-600">MGA</span>
             </div>
-            <p className="mt-2 text-xs text-gray-400">Utilisé pour calculer les prix indicatifs des produits agent.</p>
+            <p className="mt-2 text-xs text-gray-400">{ts.exchangeRateDesc}</p>
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Frais de service</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">{ts.sections.serviceFees}</h2>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {([
-                { label: "Commission agent (%)", key: "default_service_fee_pct" as const },
-                { label: "Acompte requis (%)", key: "default_deposit_pct" as const },
+                { label: ts.serviceFeeLabel, key: "default_service_fee_pct" as const },
+                { label: ts.depositLabel, key: "default_deposit_pct" as const },
               ]).map(({ label, key }) => (
                 <div key={key}>
                   <label className="block text-xs text-gray-600 mb-1">{label}</label>
@@ -124,7 +126,7 @@ export default function AdminSettingsPage() {
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Numéros de paiement mobile</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">{ts.sections.mobilePayment}</h2>
             <div className="grid grid-cols-1 gap-4 text-sm">
               {([
                 { label: "MVola (Telma)", key: "mvola_phone" as const, placeholder: "034 XX XX XX" },
@@ -142,16 +144,16 @@ export default function AdminSettingsPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-xs text-gray-400">Affiché sur la page de commande et dans les e-mails de confirmation.</p>
+            <p className="mt-2 text-xs text-gray-400">{ts.mobilePaymentDesc}</p>
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Coordonnées de contact</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">{ts.sections.contact}</h2>
             <div className="grid grid-cols-1 gap-4 text-sm">
               {([
-                { label: "WhatsApp (numéro international)", key: "contact_whatsapp" as const, placeholder: "+261 34 00 000 00" },
-                { label: "Téléphone affiché", key: "contact_phone" as const, placeholder: "+261 34 00 000 00" },
-                { label: "E-mail de contact", key: "contact_email" as const, placeholder: "contact@madashop.mg" },
+                { label: ts.whatsappLabel, key: "contact_whatsapp" as const, placeholder: "+261 34 00 000 00" },
+                { label: ts.phoneLabel, key: "contact_phone" as const, placeholder: "+261 34 00 000 00" },
+                { label: ts.emailLabel, key: "contact_email" as const, placeholder: "contact@madashop.mg" },
               ]).map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="block text-xs text-gray-600 mb-1">{label}</label>
@@ -165,11 +167,11 @@ export default function AdminSettingsPage() {
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-xs text-gray-400">Affiché dans le pied de page du site.</p>
+            <p className="mt-2 text-xs text-gray-400">{ts.contactDesc}</p>
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Environnement</h2>
+            <h2 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">{ts.sections.environment}</h2>
             <div className="space-y-2 text-sm">
               {[
                 { label: "ANTHROPIC_API_KEY", set: !!process.env.NEXT_PUBLIC_SUPABASE_URL },
@@ -179,7 +181,7 @@ export default function AdminSettingsPage() {
                 <div key={v.label} className="flex items-center justify-between">
                   <span className="font-mono text-xs text-gray-600">{v.label}</span>
                   <span className={`text-xs font-medium ${v.set ? "text-green-600" : "text-red-500"}`}>
-                    {v.set ? "✓ Configuré" : "✗ Manquant"}
+                    {v.set ? ts.configured : ts.missing}
                   </span>
                 </div>
               ))}
@@ -195,7 +197,7 @@ export default function AdminSettingsPage() {
             disabled={saving}
             className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 transition-colors"
           >
-            {saving ? <><Loader2 className="h-4 w-4 animate-spin" />Enregistrement…</> : "Enregistrer les paramètres"}
+            {saving ? <><Loader2 className="h-4 w-4 animate-spin" />{t.saving}</> : ts.saveButton}
           </button>
         </div>
       )}

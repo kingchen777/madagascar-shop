@@ -101,10 +101,10 @@ export default async function HomePage({ params }: HomePageProps) {
             {t("hero_subtitle")}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex flex-col md:flex-row md:items-start gap-4 justify-center mb-12">
             <Link
               href={`/${locale}/products`}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 font-semibold text-white transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 font-semibold text-white transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl whitespace-nowrap"
               style={{ background: "linear-gradient(135deg, #E8A400, #C8900A)", boxShadow: "0 4px 20px rgba(232,164,0,0.4)" }}
             >
               {t("shop_now")}
@@ -112,7 +112,7 @@ export default async function HomePage({ params }: HomePageProps) {
             </Link>
             <Link
               href={`/${locale}/featured`}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 font-semibold text-white transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-8 font-semibold text-white transition-all shadow-lg hover:-translate-y-0.5 hover:shadow-xl whitespace-nowrap"
               style={{ background: "linear-gradient(135deg, #C42B1C, #A81C1C)", boxShadow: "0 4px 20px rgba(168,28,28,0.4)", border: "2px solid rgba(232,164,0,0.5)" }}
             >
               {navT("featured")}
@@ -121,11 +121,11 @@ export default async function HomePage({ params }: HomePageProps) {
             <div className="flex flex-col items-center gap-1">
               <Link
                 href={`/${locale}/agent`}
-                className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/30 px-8 font-semibold text-white hover:bg-white/10 transition-all backdrop-blur-sm"
+                className="inline-flex h-12 items-center justify-center rounded-xl border-2 border-white/30 px-8 font-semibold text-white hover:bg-white/10 transition-all backdrop-blur-sm whitespace-nowrap"
               >
                 {t("agent_order")}
               </Link>
-              <span className="text-xs opacity-70" style={{ color: "#FFE8A0" }}>
+              <span className="text-xs opacity-70 text-center" style={{ color: "#FFE8A0" }}>
                 {t("agent_order_hint")}
               </span>
             </div>
